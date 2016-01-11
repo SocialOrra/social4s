@@ -18,7 +18,7 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   val jsonAction = Action.async(parse.json) { request ⇒ Future { Ok(request.body) } }
   val echoBodyAction = Action.async(parse.text) { request ⇒ Future { Ok(request.body) } }
-  val multipartAction = Action.async(parse.multipartFormData) { request ⇒ Future { Ok(request.body.dataParts.mkString) } }
+  val multipartAction = Action.async(parse.multipartFormData) { request ⇒ Future { Ok(request.body.dataParts.toSeq.sortBy(_._1).map(d ⇒ d._1 + d._2.mkString).mkString) } }
 
   implicit override lazy val app: FakeApplication =
     FakeApplication(
@@ -57,15 +57,15 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   "Properly construct batch requests" in {
     val parts = Seq(
-      "one" -> "one".getBytes("utf-8"),
-      "two" -> "two".getBytes("utf-8"),
-      "three" -> "three".getBytes("utf-8"))
+      "a" -> "a".getBytes("utf-8"),
+      "b" -> "b".getBytes("utf-8"),
+      "c" -> "c".getBytes("utf-8"))
 
     val request = buildBatch(parts)
     val requestUrl = url(cfg.protocol, cfg.graphApiHost, cfg.version, "", Map.empty, None)
     val response = await(request.execute())
     assert(request.uri.toString == requestUrl)
-    assert(response.body == "onetwothree")
+    assert(response.body == "aabbcc")
   }
 
   private def url(scheme: String, host: String, version: String, relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]): String = {
