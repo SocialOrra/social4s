@@ -15,19 +15,15 @@ private[facebook4s] object WSClient {
   def shutdown() = client.close()
 }
 
+case class FacebookConnectionInformation(
+  graphApiHost: String = "graph.facebook.com",
+  protocol: String = "https",
+  version: String = "v2.5")
+
 object FacebookConnection {
+
   val GET = "GET"
   val POST = "POST"
-
-  // prod
-  val FB_GRAPH_DOMAIN = "graph.facebook.com"
-  val PROTOCOL = "https"
-
-  // testing
-  //val FB_GRAPH_DOMAIN = "localhost:8080"
-  //val PROTOCOL = "http"
-
-  val FB_API_VERSION = "2.5"
   val FB_BATCH_PATH = ""
   val ACCESS_TOKEN = "access_token"
   val BATCH = "batch"
@@ -38,25 +34,41 @@ object FacebookConnection {
       keyAndValues._2.map(value ⇒ (key, value)).toList
     }).toSeq
 
-  private[facebook4s] def buildGet(url: String, fields: Map[String, Seq[String]])(implicit accessToken: AccessToken): WSRequest = {
+  private[facebook4s] def buildGet(url: String, fields: Map[String, Seq[String]])(implicit accessToken: AccessToken, cfg: FacebookConnectionInformation): WSRequest = {
 
     WSClient.client
-      .url(http(FB_GRAPH_DOMAIN, FB_API_VERSION, url))
+      .url(http(cfg.protocol, cfg.graphApiHost, cfg.version, url))
       .withQueryString(queryStringToSeq(fields) :+ accessTokenQS(accessToken): _*)
       .withMethod(GET)
   }
 
   private[facebook4s] def buildPost[T](url: String, body: T, fields: Map[String, Seq[String]])(
-    implicit accessToken: AccessToken, bodyWriteable: Writeable[T]): WSRequest = {
+    implicit accessToken: AccessToken, cfg: FacebookConnectionInformation, bodyWriteable: Writeable[T]): WSRequest = {
     WSClient.client
-      .url(http(FB_GRAPH_DOMAIN, FB_API_VERSION, url))
+      .url(http(cfg.protocol, cfg.graphApiHost, cfg.version, url))
       .withQueryString(queryStringToSeq(fields) :+ accessTokenQS(accessToken): _*)
       .withMethod(POST)
       .withBody[T](body)(bodyWriteable)
   }
 
-  private[facebook4s] def http(domain: String, version: String, path: String): String =
-    s"$PROTOCOL://$domain/v$version/$path"
+  private[facebook4s] def buildBatch(parts: Seq[(String, Array[Byte])])(implicit cfg: FacebookConnectionInformation): WSRequest = {
+
+    val byteArrayParts = parts.map(p ⇒ new ByteArrayPart(p._1, p._2))
+    val headers = new FluentCaseInsensitiveStringsMap().add("Content-Type", s"multipart/form-data; boundary=$boundary")
+
+    val request = MultipartUtils.newMultipartBody(java.util.Arrays.asList(byteArrayParts: _*), headers)
+    val buf = ByteBuffer.allocate(request.getContentLength.toInt)
+    request.read(buf)
+
+    WSClient.client
+      .url(http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH))
+      .withHeaders(("Content-Type", s"multipart/form-data; boundary=$boundary"))
+      .withMethod(POST)
+      .withBody(buf.array())
+  }
+
+  private[facebook4s] def http(protocol: String, domain: String, version: String, path: String): String =
+    s"$protocol://$domain/v$version/$path"
 
   private[facebook4s] def accessTokenQS(accessToken: AccessToken): (String, String) =
     ACCESS_TOKEN -> accessToken.token
@@ -67,7 +79,7 @@ object FacebookConnection {
   }
 }
 
-class FacebookConnection {
+class FacebookConnection(implicit cfg: FacebookConnectionInformation) {
 
   import FacebookConnection._
 
@@ -82,21 +94,5 @@ class FacebookConnection {
 
   def shutdown(): Unit =
     WSClient.shutdown()
-
-  def buildBatch(parts: Seq[(String, Array[Byte])]): WSRequest = {
-
-    val byteArrayParts = parts.map(p ⇒ new ByteArrayPart(p._1, p._2))
-    val headers = new FluentCaseInsensitiveStringsMap().add("Content-Type", s"multipart/form-data; boundary=$boundary")
-
-    val request = MultipartUtils.newMultipartBody(java.util.Arrays.asList(byteArrayParts: _*), headers)
-    val buf = ByteBuffer.allocate(request.getContentLength.toInt)
-    request.read(buf)
-
-    WSClient.client
-      .url(http(FB_GRAPH_DOMAIN, FB_API_VERSION, FB_BATCH_PATH))
-      .withHeaders(("Content-Type", s"multipart/form-data; boundary=$boundary"))
-      .withMethod(POST)
-      .withBody(buf.array())
-  }
 }
 

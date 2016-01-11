@@ -17,7 +17,8 @@ lazy val f4sDeps = Seq(
   typesafeConfig,
   playJson,
   playWs,
-  scalaTest
+  scalaTest,
+  scalaTestPlus
 )
 
 lazy val f4s = (project in file(".")).
