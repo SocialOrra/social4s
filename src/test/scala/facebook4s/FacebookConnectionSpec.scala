@@ -3,6 +3,7 @@ package facebook4s
 import org.scalatestplus.play._
 
 import play.api.GlobalSettings
+import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test._
 import play.api.mvc._
@@ -66,6 +67,27 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
     val response = await(request.execute())
     assert(request.uri.toString == requestUrl)
     assert(response.body == "aabbcc")
+  }
+
+  "Parse batch responses" in {
+
+    import FacebookBatchResponse._
+
+      def jsonPartResponse(id: Int) =
+        s"""
+         | { "code": 200,
+         |   "headers": [ { "name": "Content-Type", "value": "text/javascript; charset=UTF-8" } ],
+         |   "body": "{\\"name\\":\\"Some Name\\",\\"id\\":\\"$id\\"}"
+         | }
+      """.stripMargin
+
+    val jsonResponse = "[" + (1 to 3).map { jsonPartResponse }.mkString(",") + "]"
+    val parts = Json.parse(jsonResponse).validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty)
+    assert(parts.size == 3)
+    assert(parts.map(_.code) == Seq(200, 200, 200))
+    parts.map(_.bodyJson) foreach { json ⇒
+      (json \ "name").validate[String].get == "Some Name"
+    }
   }
 
   private def url(scheme: String, host: String, version: String, relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]): String = {
