@@ -68,7 +68,7 @@ object FacebookConnection {
   }
 
   private[facebook4s] def http(protocol: String, domain: String, version: String, path: String): String =
-    s"$protocol://$domain/v$version/$path"
+    s"$protocol://$domain/$version/$path"
 
   private[facebook4s] def accessTokenQS(accessToken: AccessToken): (String, String) =
     ACCESS_TOKEN -> accessToken.token
