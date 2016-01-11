@@ -1,0 +1,35 @@
+package facebook4s
+
+import play.api.http.Writeable
+import play.api.libs.ws.WSResponse
+
+import scala.concurrent.Future
+
+object FacebookRequestBuilder {
+  implicit def writeableToSomeWriteable[T](writeable: Writeable[T]): Option[Writeable[T]] = Some(writeable)
+}
+
+case class FacebookRequestBuilder(requests: Seq[Request] = Seq.empty) {
+
+  import FacebookConnection._
+
+  def get(relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]) =
+    batch(GetRequest(relativeUrl, queryString, accessToken))
+
+  def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]) =
+    batch(PostRequest(relativeUrl, queryString, accessToken, body))
+
+  def execute(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None): Future[WSResponse] = {
+
+    val accessTokenPart = accessToken.map { a ⇒
+      Seq(ACCESS_TOKEN -> a.token.getBytes("utf-8"))
+    }.getOrElse(Seq.empty[(String, Array[Byte])])
+
+    val batchPart = BATCH -> ("[" + requests.map(_.toJson).mkString(",") + "]").getBytes("utf-8")
+
+    facebookConnection.batch(accessTokenPart :+ batchPart)
+  }
+
+  private def batch(request: Request) = copy(requests :+ request)
+}
+
