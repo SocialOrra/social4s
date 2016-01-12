@@ -6,4 +6,5 @@ Features
 ===
 * Asynchronous in nature
 * Supports Facebook's batch API
+* Supports per request access token; or global access token
 
