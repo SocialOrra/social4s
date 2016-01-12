@@ -40,14 +40,14 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   implicit val accessToken = AccessToken("abc", 0L)
 
-  "Properly construct GET requests" in {
+  "Construct GET requests" in {
     val qs = Map("f1" -> Seq("v1"), "f2" -> Seq("v2"))
     val request = buildGet("me", qs)
     val requestUrl = url(cfg.protocol, cfg.graphApiHost, cfg.version, "me", qs, Some(accessToken))
     assert(request.uri.toString == requestUrl)
   }
 
-  "Properly construct POST requests" in {
+  "Construct POST requests" in {
     val qs = Map("f1" -> Seq("v1"), "f2" -> Seq("v2"))
     val request = buildPost("me", "post-body", qs)
     val requestUrl = url(cfg.protocol, cfg.graphApiHost, cfg.version, "me", qs, Some(accessToken))
@@ -56,7 +56,7 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
     assert(response.body == "post-body")
   }
 
-  "Properly construct batch requests" in {
+  "Construct batch requests" in {
     val parts = Seq(
       "a" -> "a".getBytes("utf-8"),
       "b" -> "b".getBytes("utf-8"),
