@@ -13,6 +13,8 @@ import play.api.mvc.Results._
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 
+import facebook4s.FacebookBatchResponse.Implicits._
+
 class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   import FacebookConnection._
@@ -71,23 +73,70 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   "Parse batch responses" in {
 
-    import FacebookBatchResponse._
+    val NUM_SUCCESSES = 3
+    val NUM_ERRORS = 3
+    val JSON_ERROR_CODE = 190
+    val HTTP_SUCCESS_CODE = 200
+    val HTTP_ERROR_CODE = 403
+    val NAME = "Some Name"
 
-      def jsonPartResponse(id: Int) =
+      def jsonPartResponse(id: Int): String =
         s"""
-         | { "code": 200,
+         |{
+         |  "code": $HTTP_SUCCESS_CODE,
+         |  "headers": [ { "name": "Content-Type", "value": "text/javascript; charset=UTF-8" } ],
+         |  "body": "${jsonSuccessBody(id).replaceAll("\n", "").replaceAll("""\"""", """\\"""")}"
+         |}
+      """.stripMargin
+
+      def jsonSuccessBody(id: Int): String = {
+        s"""
+           |{
+           |  "name": "$NAME",
+           |  "id": "$id"
+           |}
+         """.stripMargin
+      }
+
+      def jsonErrorBody(id: Int): String = {
+        s"""
+           |{
+           |  "error": {
+           |    "message": "Message $id",
+           |    "type": "OAuthException",
+           |    "code": $JSON_ERROR_CODE,
+           |    "error_subcode": 460,
+           |    "error_user_title": "A title",
+           |    "error_user_msg": "A message",
+           |    "fbtrace_id": "EJplcsCHuLu"
+           |  }
+           |}
+         """.stripMargin
+      }
+
+      def jsonPartErrorResponse(id: Int) =
+        s"""
+         | { "code": $HTTP_ERROR_CODE,
          |   "headers": [ { "name": "Content-Type", "value": "text/javascript; charset=UTF-8" } ],
-         |   "body": "{\\"name\\":\\"Some Name\\",\\"id\\":\\"$id\\"}"
+         |   "body": "${jsonErrorBody(id).replaceAll("\n", "").replaceAll("""\"""", """\\"""")}"
          | }
       """.stripMargin
 
-    val jsonResponse = "[" + (1 to 3).map { jsonPartResponse }.mkString(",") + "]"
+    val jsonBody = (1 to NUM_SUCCESSES).map { jsonPartResponse } ++ (1 to NUM_ERRORS).map { jsonPartErrorResponse }
+    val jsonResponse = "[" + jsonBody.mkString(",") + "]"
     val parts = Json.parse(jsonResponse).validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty)
-    assert(parts.size == 3)
-    assert(parts.map(_.code) == Seq(200, 200, 200))
-    parts.map(_.bodyJson) foreach { json ⇒
-      (json \ "name").validate[String].get == "Some Name"
+
+    val returnCodes = (1 to NUM_SUCCESSES).map { _ ⇒ HTTP_SUCCESS_CODE } ++ (1 to NUM_ERRORS).map { _ ⇒ HTTP_ERROR_CODE }
+    assert(parts.size == NUM_SUCCESSES + NUM_ERRORS)
+    assert(parts.map(_.code) == returnCodes)
+
+    parts.take(NUM_SUCCESSES).map(_.bodyJson) foreach { json ⇒
+      (json \ "name").validate[String].get == NAME
     }
+    parts.takeRight(NUM_ERRORS).map(_.bodyJson) foreach { json ⇒
+      (json \ "error" \ "code").validate[Int].get == JSON_ERROR_CODE
+    }
+
   }
 
   private def url(scheme: String, host: String, version: String, relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]): String = {
