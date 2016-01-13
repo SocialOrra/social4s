@@ -3,20 +3,21 @@ package facebook4s
 import play.api.http.Writeable
 import play.api.libs.ws.WSResponse
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 
 object FacebookRequestBuilder {
   implicit def writeableToSomeWriteable[T](writeable: Writeable[T]): Option[Writeable[T]] = Some(writeable)
 }
 
-case class FacebookRequestBuilder(requests: Seq[Request] = Seq.empty) {
+case class FacebookRequestBuilder(var requests: ListBuffer[Request] = ListBuffer.empty) {
 
   import FacebookConnection._
 
-  def get(relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]) =
+  def get(relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]): this.type =
     batch(GetRequest(relativeUrl, queryString, accessToken))
 
-  def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]) =
+  def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]): this.type =
     batch(PostRequest(relativeUrl, queryString, accessToken, body))
 
   def execute(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None): Future[WSResponse] = {
@@ -30,6 +31,9 @@ case class FacebookRequestBuilder(requests: Seq[Request] = Seq.empty) {
     facebookConnection.batch(accessTokenPart :+ batchPart)
   }
 
-  private def batch(request: Request) = copy(requests :+ request)
+  private def batch(request: Request): this.type = {
+    requests += request
+    this
+  }
 }
 
