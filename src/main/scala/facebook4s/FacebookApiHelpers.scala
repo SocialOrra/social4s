@@ -14,4 +14,13 @@ trait FacebookApiHelpers {
     .groupBy(kv ⇒ kv._1)
     // keep key grouping, change values from k1->v1 to v1
     .mapValues(group ⇒ group.map(x ⇒ x._2.get.toString))
+
+  protected def buildRelativeUrl(parts: Any*): String = parts
+    .filter(p ⇒ p != None && p != null)
+    .map {
+      case Some(a) ⇒ a.toString
+      case a       ⇒ a
+    }
+    .mkString("/")
 }
+

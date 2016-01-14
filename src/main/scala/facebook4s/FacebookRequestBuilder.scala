@@ -7,7 +7,11 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 
 object FacebookRequestBuilder {
-  implicit def writeableToSomeWriteable[T](writeable: Writeable[T]): Option[Writeable[T]] = Some(writeable)
+
+  object Implicits {
+    implicit def writeableToSomeWriteable[T](writeable: Writeable[T]): Option[Writeable[T]] = Some(writeable)
+    implicit def stringToOption(s: String): Option[String] = Option(s)
+  }
 }
 
 case class FacebookRequestBuilder(var requests: ListBuffer[Request] = ListBuffer.empty) {

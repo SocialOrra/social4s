@@ -5,18 +5,20 @@ object FacebookMarketingApi extends FacebookApiHelpers {
   implicit class FacebookAdsInsightsApi(requestBuilder: FacebookRequestBuilder) {
     def adInsights(
       adId: String,
-      metric: String = "",
+      metric: Option[String] = None,
       period: Option[String] = None,
       since: Option[Long] = None,
       until: Option[Long] = None,
       accessToken: Option[AccessToken] = None): FacebookRequestBuilder = {
+
+      val relativeUrl = buildRelativeUrl(adId, "insights", metric)
 
       val modifiers = buildModifiers(
         "period" -> period,
         "since" -> since,
         "until" -> until)
 
-      requestBuilder.get(s"$adId/insights/$metric", modifiers, accessToken)
+      requestBuilder.get(relativeUrl, modifiers, accessToken)
     }
 
     def campaignInsights(campaignId: String, accessToken: Option[AccessToken] = None) = requestBuilder.get(s"$campaignId/insights", Map.empty, accessToken)
