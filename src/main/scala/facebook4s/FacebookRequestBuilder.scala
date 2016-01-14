@@ -8,9 +8,8 @@ import scala.concurrent.Future
 
 object FacebookRequestBuilder {
 
-  object Implicits {
+  trait Implicits {
     implicit def writeableToSomeWriteable[T](writeable: Writeable[T]): Option[Writeable[T]] = Some(writeable)
-    implicit def stringToOption(s: String): Option[String] = Option(s)
   }
 }
 

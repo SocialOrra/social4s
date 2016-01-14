@@ -13,11 +13,10 @@ import play.api.mvc.Results._
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 
-import facebook4s.FacebookBatchResponse.Implicits._
-
 class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   import FacebookConnection._
+  import facebook4s.Implicits._
 
   val jsonAction = Action.async(parse.json) { request ⇒ Future { Ok(request.body) } }
   val echoBodyAction = Action.async(parse.text) { request ⇒ Future { Ok(request.body) } }

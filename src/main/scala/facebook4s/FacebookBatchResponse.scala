@@ -7,7 +7,7 @@ case class FacebookBatchResponse(code: Int, headers: Map[String, Seq[String]], p
 
 object FacebookBatchResponse {
 
-  object Implicits {
+  trait Implicits {
     implicit val facebookBatchResponsePartHeaderFmt = Json.format[FacebookBatchResponsePartHeader]
     implicit val facebookBatchResponsePartFmt = Json.format[FacebookBatchResponsePart]
   }
