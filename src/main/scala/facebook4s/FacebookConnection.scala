@@ -49,8 +49,6 @@ object FacebookConnection {
     val buf = ByteBuffer.allocate(request.getContentLength.toInt)
     request.read(buf)
 
-    println(new String(buf.array))
-
     WSClient.client
       .url(http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH))
       .withHeaders(("Content-Type", s"multipart/form-data; boundary=$boundary"))

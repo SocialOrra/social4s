@@ -2,7 +2,6 @@ package facebook4s
 
 import play.api.http.Writeable
 import play.api.libs.json.{ JsError, JsSuccess }
-import play.api.libs.ws.WSResponse
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
@@ -19,16 +18,10 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
   import FacebookConnection._
 
   def get(relativeUrl: String, queryString: Map[String, Seq[String]], since: Option[Long], until: Option[Long], accessToken: Option[AccessToken]): this.type =
-    batch( // if since and until, this is a ranged request
-      if (since.isDefined && until.isDefined) RangedRequest(since.get, until.get, GetRequest(relativeUrl, queryString, accessToken))
-      // regular request otherwise
-      else GetRequest(relativeUrl, queryString, accessToken))
+    batch(maybeRanged(since, until, GetRequest(relativeUrl, queryString, accessToken)))
 
   def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], since: Option[Long], until: Option[Long], accessToken: Option[AccessToken]): this.type =
-    batch( // if since and until, this is a ranged request
-      if (since.isDefined && until.isDefined) RangedRequest(since.get, until.get, PostRequest(relativeUrl, queryString, accessToken, body))
-      // regular request otherwise
-      else PostRequest(relativeUrl, queryString, accessToken, body))
+    batch(maybeRanged(since, until, PostRequest(relativeUrl, queryString, accessToken, body)))
 
   def execute(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[FacebookBatchResponse] =
     facebookConnection
@@ -40,7 +33,7 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
   def executeWithPagination(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] =
     _executeWithPagination(requests)
 
-  protected def _executeWithPagination(requests: Seq[Request])(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] = {
+  private def _executeWithPagination(requests: Seq[Request])(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] = {
 
     val parts = makeParts(accessToken, requests)
 
@@ -112,6 +105,10 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
       .getOrElse(Seq.empty[(String, Array[Byte])]) ++
       Seq(BATCH -> ("[" + requests.map(_.toJson()).mkString(",") + "]").getBytes("utf-8"))
   }
+
+  private def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request =
+    if (since.isDefined && until.isDefined) RangedRequest(since.get, until.get, request)
+    else request
 
   private def batch(request: Request): this.type = {
     requests += request
