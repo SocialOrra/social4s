@@ -8,20 +8,24 @@ trait Request {
   val queryString: Map[String, Seq[String]]
   val accessToken: Option[AccessToken]
 
-  def toJson: String
+  def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String
+}
 
-  protected def queryStringAsStringWithToken = (queryString ++ accessToken.map(accessTokenQS))
-    .flatMap { keyAndValues ⇒
-      val key = keyAndValues._1
-      keyAndValues._2.map(value ⇒ s"$key=$value").toList
-    }
-    .mkString("&")
+object Request {
 
-  protected def accessTokenQS(accessToken: AccessToken): (String, Seq[String]) =
+  def queryStringAsStringWithToken(queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]) =
+    (queryString ++ accessToken.map(accessTokenQS))
+      .flatMap { keyAndValues ⇒
+        val key = keyAndValues._1
+        keyAndValues._2.map(value ⇒ s"$key=$value").toList
+      }
+      .mkString("&")
+
+  def accessTokenQS(accessToken: AccessToken): (String, Seq[String]) =
     FacebookConnection.ACCESS_TOKEN -> Seq(accessToken.token)
 
-  protected def maybeQueryString: String = {
-    if (queryString.nonEmpty) "?" + queryStringAsStringWithToken
+  def maybeQueryString(queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]): String = {
+    if (queryString.nonEmpty) "?" + queryStringAsStringWithToken(queryString, accessToken)
     else ""
   }
 }
@@ -31,21 +35,29 @@ case object GetMethod extends HttpMethod { override val name = "GET" }
 case object PostMethod extends HttpMethod { override val name = "POST" }
 
 case class GetRequest(relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], method: HttpMethod = GetMethod) extends Request {
-  override def toJson: String = {
+  override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
-      "relative_url" -> JsString(relativeUrl + maybeQueryString))).toString()
+      "relative_url" -> JsString(relativeUrl + Request.maybeQueryString(queryString ++ extraQueryStringParams, accessToken)))).toString()
   }
 }
 
 case class PostRequest(relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], body: Option[String], method: HttpMethod = PostMethod) extends Request {
 
-  override def toJson: String = {
+  override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
-      "relative_url" -> JsString(relativeUrl + maybeQueryString)) ++
+      "relative_url" -> JsString(relativeUrl + Request.maybeQueryString(queryString ++ extraQueryStringParams, accessToken))) ++
       body.map(b ⇒ Seq("body" -> JsString(b))).getOrElse(Seq.empty) // TODO: URLEncode() the body string, needed?
       ).toString()
   }
 }
 
+case class RangedRequest(since: Long, until: Long, request: Request) extends Request {
+  protected val sinceUntil = Map("since" -> Seq(since.toString), "until" -> Seq(until.toString))
+  override val method = request.method
+  override val relativeUrl = request.relativeUrl
+  override val queryString = request.queryString ++ sinceUntil
+  override val accessToken = request.accessToken
+  override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ sinceUntil)
+}

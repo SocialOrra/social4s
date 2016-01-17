@@ -7,7 +7,7 @@ import com.ning.http.client.multipart.{ ByteArrayPart, MultipartUtils }
 import play.api.libs.ws.{ WSRequest, WSResponse }
 import play.api.http.Writeable
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 object FacebookConnection {
 
@@ -49,6 +49,8 @@ object FacebookConnection {
     val buf = ByteBuffer.allocate(request.getContentLength.toInt)
     request.read(buf)
 
+    println(new String(buf.array))
+
     WSClient.client
       .url(http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH))
       .withHeaders(("Content-Type", s"multipart/form-data; boundary=$boundary"))
@@ -78,7 +80,7 @@ class FacebookConnection(implicit cfg: FacebookConnectionInformation) {
   def post[T](url: String, body: T, fields: Map[String, Seq[String]])(implicit accessToken: AccessToken, writeable: Writeable[T]): Future[WSResponse] =
     buildPost(url, body, fields).execute(POST)
 
-  def batch(parts: Seq[(String, Array[Byte])]): Future[WSResponse] =
+  def batch(parts: Seq[(String, Array[Byte])])(implicit ec: ExecutionContext): Future[WSResponse] =
     buildBatch(parts).execute(POST)
 
   def shutdown(): Unit =

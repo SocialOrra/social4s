@@ -27,10 +27,9 @@ class FacebookRequestBuilderSpec extends PlaySpec with BeforeAndAfterAll {
   "Successfully use the Facebook Graph API" in {
     val requestBuilder = FacebookRequestBuilder()
 
-    requestBuilder.get("me", Map.empty, None)
+    requestBuilder.get("me", Map.empty, since = None, until = None, accessToken = None)
     val future = requestBuilder.execute
-    val responseRaw = Await.result(future, 5.seconds)
-    val response = FacebookBatchResponse(responseRaw)
+    val response = Await.result(future, 5.seconds)
 
     assert(response.parts.size == 1)
     assert((response.parts.head.bodyJson \ "name").validate[String].get == profileName)
