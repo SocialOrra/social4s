@@ -17,6 +17,7 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   import FacebookConnection._
   import facebook4s.Implicits._
+  import FacebookTestHelpers._
 
   val jsonAction = Action.async(parse.json) { request ⇒ Future { Ok(request.body) } }
   val echoBodyAction = Action.async(parse.text) { request ⇒ Future { Ok(request.body) } }
@@ -72,57 +73,7 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   "Parse batch responses" in {
 
-    val NUM_SUCCESSES = 3
-    val NUM_ERRORS = 3
-    val JSON_ERROR_CODE = 190
-    val HTTP_SUCCESS_CODE = 200
-    val HTTP_ERROR_CODE = 403
-    val NAME = "Some Name"
-
-      def jsonPartResponse(id: Int): String =
-        s"""
-         |{
-         |  "code": $HTTP_SUCCESS_CODE,
-         |  "headers": [ { "name": "Content-Type", "value": "text/javascript; charset=UTF-8" } ],
-         |  "body": "${jsonSuccessBody(id).replaceAll("\n", "").replaceAll("""\"""", """\\"""")}"
-         |}
-      """.stripMargin
-
-      def jsonSuccessBody(id: Int): String = {
-        s"""
-           |{
-           |  "name": "$NAME",
-           |  "id": "$id"
-           |}
-         """.stripMargin
-      }
-
-      def jsonErrorBody(id: Int): String = {
-        s"""
-           |{
-           |  "error": {
-           |    "message": "Message $id",
-           |    "type": "OAuthException",
-           |    "code": $JSON_ERROR_CODE,
-           |    "error_subcode": 460,
-           |    "error_user_title": "A title",
-           |    "error_user_msg": "A message",
-           |    "fbtrace_id": "EJplcsCHuLu"
-           |  }
-           |}
-         """.stripMargin
-      }
-
-      def jsonPartErrorResponse(id: Int) =
-        s"""
-         | { "code": $HTTP_ERROR_CODE,
-         |   "headers": [ { "name": "Content-Type", "value": "text/javascript; charset=UTF-8" } ],
-         |   "body": "${jsonErrorBody(id).replaceAll("\n", "").replaceAll("""\"""", """\\"""")}"
-         | }
-      """.stripMargin
-
-    val jsonBody = (1 to NUM_SUCCESSES).map { jsonPartResponse } ++ (1 to NUM_ERRORS).map { jsonPartErrorResponse }
-    val jsonResponse = "[" + jsonBody.mkString(",") + "]"
+    val jsonResponse = makeJsonResponse(NUM_SUCCESSES, NUM_ERRORS)
     val parts = Json.parse(jsonResponse).validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty)
 
     val returnCodes = (1 to NUM_SUCCESSES).map { _ ⇒ HTTP_SUCCESS_CODE } ++ (1 to NUM_ERRORS).map { _ ⇒ HTTP_ERROR_CODE }
@@ -136,17 +87,5 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
       (json \ "error" \ "code").validate[Int].get == JSON_ERROR_CODE
     }
 
-  }
-
-  private def url(scheme: String, host: String, version: String, relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]): String = {
-    val qs = FacebookConnection.queryStringToSeq(queryString) ++ accessToken.map(a ⇒ Seq(FacebookConnection.accessTokenQS(a))).getOrElse(Seq.empty)
-
-    val qsString = {
-      val q = qs.map { kv ⇒ kv._1 + "=" + kv._2 }.mkString("&")
-      if (q.nonEmpty) "?" + q
-      else q
-    }
-
-    s"$scheme://$host/$version/$relativeUrl$qsString"
   }
 }
