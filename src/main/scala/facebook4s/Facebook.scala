@@ -26,7 +26,7 @@ case class FacebookBatchResponsePart(code: Int, headers: Seq[FacebookBatchRespon
 object FacebookPagingInfo {
   implicit val pagingFmt = Json.format[FacebookPagingInfo]
 
-  def apply(previousSince: Long, previousUntil: Long, nextSince: Long, nextUntil: Long) = {
+  def fromLongs(previousSince: Long, previousUntil: Long, nextSince: Long, nextUntil: Long) = {
     FacebookPagingInfo(s"since=$previousSince&until=$previousUntil", s"since=$nextSince&until=$nextUntil")
   }
 }

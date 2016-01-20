@@ -10,11 +10,12 @@ object FacebookBatchResponse {
   trait Implicits {
     implicit val facebookBatchResponsePartHeaderFmt = Json.format[FacebookBatchResponsePartHeader]
     implicit val facebookBatchResponsePartFmt = Json.format[FacebookBatchResponsePart]
+    implicit val facebookBatchResponseFmt = Json.format[FacebookBatchResponse]
   }
 
-  import Implicits._
+  import implicits._
 
-  def apply(wsResponse: WSResponse): FacebookBatchResponse = {
+  def fromWSResponse(wsResponse: WSResponse): FacebookBatchResponse = {
     FacebookBatchResponse(wsResponse.status, wsResponse.allHeaders, wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty))
   }
 }

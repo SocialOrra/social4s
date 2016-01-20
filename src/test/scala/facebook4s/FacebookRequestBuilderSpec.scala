@@ -23,6 +23,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
   import FacebookConnection._
   import FacebookTestHelpers._
+  import implicits._
 
   val config = ConfigFactory.load("test.conf")
 
@@ -34,24 +35,32 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
   val profileName = config.getString("facebook4s.test.profile-name")
   implicit val accessTokenOpt = Some(accessToken)
 
+  val limit = 30
+
+  val data = TreeMap(
+    (0 until 1000) map { n ⇒
+      n -> Json.obj("key" -> n, "value" -> s"value-$n")
+    }: _*)
+
   val multipartAction = Action.async(parse.multipartFormData) { request ⇒
     Future {
 
-      val limit = 30
-
-      val data = TreeMap(
-        (0 until 1000) map { n ⇒
-          n -> Json.obj("key" -> n, "value" -> s"value-$n")
-        }: _*)
-
       val batchPart = request.body.dataParts.filterKeys(_ == "batch").headOption
 
-      val json = batchPart.flatMap(_._2.headOption).map(Json.parse)
+      val batchPartAsJsonOpt = batchPart.flatMap(_._2.headOption).map(Json.parse)
 
-      json.map { j ⇒
-        val urls = j \\ "relative_url"
+      val response = batchPartAsJsonOpt.map { batchPartAsJson ⇒
 
-        val sinceUntilSeq = urls.map(_.as[String].split("\\?").tail.head.split("&").filter(s ⇒ s.startsWith("since=") || s.startsWith("until=")).map(kv ⇒ kv.split("=")))
+        val relativeUrls = batchPartAsJson \\ "relative_url"
+
+        val sinceUntilSeq = relativeUrls
+          .map(_.as[String]
+            .split("\\?")
+            .tail
+            .head.
+            split("&")
+            .filter(s ⇒ s.startsWith("since=") || s.startsWith("until="))
+            .map(_.split("=")))
 
         val parts = sinceUntilSeq.map { su ⇒
           val since = su(0)(1).toLong
@@ -59,7 +68,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
           println(s"since=$since, until=$until")
 
-          val sinceUntil = if (since + until > limit) {
+          val (sinceNormalized, untilNormalized) = if (since + until > limit) {
             // asked for more than the limit, return limit
             (since, since + limit)
           } else {
@@ -67,15 +76,15 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
             (since, until)
           }
 
-          val previousSince = Math.min(0, since - limit)
-          val previousUntil = Math.max(data.size, previousSince + limit)
-          val nextSince = Math.max(data.size, until + limit)
-          val nextUntil = Math.max(data.size, nextSince + limit)
+          val previousSince = sinceNormalized - limit
+          val previousUntil = previousSince + limit
+          val nextSince = untilNormalized
+          val nextUntil = nextSince + limit
 
           val parts = makeBatchResponsePart(
             body = makeBatchResponsePartBody(
               data = Seq(makeBatchResponsePartBodyData(value = JsArray(Seq(Json.obj("value" -> "change-me"))))),
-              paging = FacebookPagingInfo(
+              paging = FacebookPagingInfo.fromLongs(
                 previousSince,
                 previousUntil,
                 nextSince,
@@ -84,15 +93,15 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
           parts
         }
 
-        val response = makeBatchResponse(parts)
+        val response = makeBatchResponse(parts = parts)
 
         response
       }
 
-      println("jsonRequest=" + json.get.toString)
-      println("jsonResponse=" + response)
+      println("--- jsonRequest=" + batchPartAsJsonOpt.get)
+      println("--- jsonResponse=" + Json.toJson(response.get.parts))
 
-      Ok(jsonResponse.toJson)
+      Ok(Json.toJson(response.get.parts))
     }
   }
 
@@ -129,10 +138,10 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
     implicit lazy val conn = new FacebookConnection
     val requestBuilder = FacebookRequestBuilder()
     requestBuilder.adInsights("123", since = Some(0), until = Some(100))
-    requestBuilder.adInsights("123", since = Some(0), until = Some(100))
+    requestBuilder.adInsights("456", since = Some(100), until = Some(500))
     val future = requestBuilder.executeWithPagination
     val response = Await.result(future, 10.seconds)
-    println("response=" + response)
+    println("--- returned & parsed response=" + response)
 
     conn.shutdown()
   }

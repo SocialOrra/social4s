@@ -1,5 +1,5 @@
 package facebook4s
 
-object Implicits
+package object implicits
   extends FacebookBatchResponse.Implicits
   with FacebookRequestBuilder.Implicits

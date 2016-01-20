@@ -28,7 +28,7 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
       // assemble request parts and send it off
       .batch(makeParts(accessToken, requests))
       // map the response to our internal type
-      .map(FacebookBatchResponse.apply)
+      .map(FacebookBatchResponse.fromWSResponse)
 
   def executeWithPagination(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] =
     _executeWithPagination(requests)
@@ -39,7 +39,7 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
 
     facebookConnection.batch(parts).flatMap { rawResponse ⇒
 
-      val response = FacebookBatchResponse(rawResponse)
+      val response = FacebookBatchResponse.fromWSResponse(rawResponse)
       val executeNewRequests = _executeWithPagination(_: Seq[Request])(facebookConnection, accessToken, ec)
 
       val futures = requests

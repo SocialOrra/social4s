@@ -16,8 +16,8 @@ import scala.concurrent.Future
 class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   import FacebookConnection._
-  import facebook4s.Implicits._
   import FacebookTestHelpers._
+  import implicits._
 
   val jsonAction = Action.async(parse.json) { request ⇒ Future { Ok(request.body) } }
   val echoBodyAction = Action.async(parse.text) { request ⇒ Future { Ok(request.body) } }
