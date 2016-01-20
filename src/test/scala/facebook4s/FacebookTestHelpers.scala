@@ -2,6 +2,9 @@ package facebook4s
 
 import java.io.LineNumberReader
 
+import com.gargoylesoftware.htmlunit.MockWebConnection.RawResponseData
+import play.api.libs.json._
+
 object FacebookTestHelpers {
 
   val NUM_SUCCESSES = 3
@@ -55,12 +58,43 @@ object FacebookTestHelpers {
   def makeJsonResponse(numSuccess: Int, numErrors: Int) =
     "[" + makeJsonBody(numSuccess, numErrors).mkString(",") + "]"
 
-  // data response helpers
-  def makeJsonDataResponse(numResponse: Int) =
-    "[" + makeJsonDataBody(numResponse).mkString(",") + "]"
+  //case class FacebookResponseBody(data: Seq[JsObject], pagingInfo: FacebookPagingInfo)
+  //case class FacebookResponseData(
+  //  httpCode: Int = 200,
+  //  headers: Seq[JsObject] = Seq(Json.obj("name" -> "Content-Type", "value" -> "text/javascript; charset=UTF-8")),
+  //  body: FacebookResponseBody)
 
-  def makeJsonDataBody(numResponse: Int) =
-    (1 to numResponse).map { jsonDataPartResponse }
+  //def makeFacebookResponseBody(data: Array[Int], previous: FacebookResponseBody = {
+  //  val data = Json.obj(
+  //    "name" -> "data-name",
+  //    "period" -> "day",
+  //    // TODO: make the number and values of the data configurable
+  //    "values" -> JsArray(Seq(Json.obj("value" -> "some-value"))))
+
+  //  val previous
+  //  val next
+  //  val pagingInfo = FacebookPagingInfo(previous, next)
+  //}
+
+  val defaultHeaders = Map("Content-Type" -> Seq("text/javascript; charset=UTF-8"))
+  val defaultPartHeaders = Seq(FacebookBatchResponsePartHeader("Content-Type", "text/javascript; charset=UTF-8"))
+
+  def makeBatchResponsePartBodyData(name: String = "data-name", period: String = "day", value: JsArray): JsObject = Json.obj(
+    "name" -> name,
+    "period" -> period,
+    "values" -> value)
+
+  def makeBatchResponsePartBody(data: Seq[JsObject], paging: FacebookPagingInfo): JsObject = Json.obj(
+    "data" -> "",
+    "paging" -> paging.toJson)
+
+  def makeBatchResponsePart(code: Int = 200, headers: Seq[FacebookBatchResponsePartHeader] = defaultPartHeaders, body: JsObject): FacebookBatchResponsePart = {
+    FacebookBatchResponsePart(code, headers, body.toString)
+  }
+
+  def makeBatchResponse(code: Int = 200, headers: Map[String, Seq[String]] = defaultHeaders, parts: Seq[FacebookBatchResponsePart]): FacebookBatchResponse = {
+    FacebookBatchResponse(code, headers, parts)
+  }
 
   def jsonDataPartResponse(id: Int): String =
     s"""

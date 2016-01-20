@@ -1,6 +1,6 @@
 package facebook4s
 
-import play.api.libs.json.Json
+import play.api.libs.json.{ JsArray, JsObject, Json }
 import play.api.libs.ws.ning._
 
 private[facebook4s] object WSClient {
@@ -9,14 +9,26 @@ private[facebook4s] object WSClient {
 }
 
 // TODO: make the value a Seq[String] to account for multi-valued headers
-case class FacebookBatchResponsePartHeader(name: String, value: String)
+case class FacebookBatchResponsePartHeader(name: String, value: String) {
+  lazy val toJson: JsObject = Json.obj(
+    "name" -> name,
+    "value" -> value)
+}
 
 case class FacebookBatchResponsePart(code: Int, headers: Seq[FacebookBatchResponsePartHeader], body: String) {
   lazy val bodyJson = Json.parse(body)
+  lazy val toJson = Json.obj(
+    "code" -> code,
+    "headers" -> JsArray(headers.map(_.toJson)),
+    "body" -> body)
 }
 
 object FacebookPagingInfo {
   implicit val pagingFmt = Json.format[FacebookPagingInfo]
+
+  def apply(previousSince: Long, previousUntil: Long, nextSince: Long, nextUntil: Long) = {
+    FacebookPagingInfo(s"since=$previousSince&until=$previousUntil", s"since=$nextSince&until=$nextUntil")
+  }
 }
 
 case class FacebookPagingInfo(previous: String, next: String) {
@@ -33,4 +45,8 @@ case class FacebookPagingInfo(previous: String, next: String) {
       .find(_.startsWith(s"$key="))
       .map(_.splitAt(6)._2)
       .flatMap(s ⇒ if (s.length > 0) Some(s.toLong) else None)
+
+  def toJson: JsObject = Json.obj(
+    "previous" -> previous,
+    "next" -> next)
 }
