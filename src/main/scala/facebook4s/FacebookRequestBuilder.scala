@@ -33,63 +33,50 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
   def executeWithPagination(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] =
     _executeWithPagination(requests)
 
-  private def _executeWithPagination(requests: Seq[Request])(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] = {
+  private def _executeWithPagination(requests: Seq[Request], completedRequests: Seq[(Request, FacebookBatchResponsePart)] = Seq.empty)(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] = {
 
     val parts = makeParts(accessToken, requests)
 
-    facebookConnection.batch(parts).flatMap { rawResponse ⇒
+    facebookConnection.batch(parts).map { rawResponse ⇒
 
       val response = FacebookBatchResponse.fromWSResponse(rawResponse)
-      val executeNewRequests = _executeWithPagination(_: Seq[Request])(facebookConnection, accessToken, ec)
 
-      val futures = requests
+      val responses = requests
         // group up each request with it's corresponding response
         .zip(response.parts)
         // create two groups: complete, incomplete
         // note that  non-200 responses are considered complete
         .groupBy(isRequestComplete)
-        // handle responses
-        // if complete, accumulate
-        // otherwise, rebuild new requests, fire them off, return parts
-        .map(accumulateCompleteRequests orElse (newRequestsFromIncompleteRequests andThen executeNewRequests))
 
-      // create a single future representing the sequence of futures
-      Future.sequence(futures.toSeq).map(_.flatten)
+      val complete = responses.getOrElse(true, Seq.empty).map(accumulateCompleteRequest)
+      val incompleteResponses = responses.getOrElse(false, Seq.empty).map(accumulateCompleteRequest)
+      val newRequests = responses.getOrElse(false, Seq.empty).map(newRequestFromIncompleteRequest)
+
+      (complete ++ incompleteResponses, newRequests)
+
+    } flatMap {
+      case (complete, incomplete) if incomplete.nonEmpty ⇒
+        _executeWithPagination(incomplete, completedRequests ++ complete)
+      case (complete, _) ⇒
+        Future.successful { completedRequests ++ complete }
     }
   }
 
-  private def accumulateCompleteRequests: PartialFunction[(Boolean, Seq[(Request, FacebookBatchResponsePart)]), Future[Seq[(Request, FacebookBatchResponsePart)]]] = {
-    case (true, complete) ⇒ Future.successful {
-      complete.map {
-        case (req: RangedRequest, res) ⇒ (req.request, res) // original request so we can group all parts on it later
-        case reqRes                    ⇒ reqRes
-      }
-    }
+  private def accumulateCompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): (Request, FacebookBatchResponsePart) = reqRes match {
+    case (req: RangedRequest, res) ⇒ (req.request, res) // original request so we can group all parts on it later
+    case r                         ⇒ r
   }
 
-  private def newRequestsFromIncompleteRequests: PartialFunction[(Boolean, Seq[(Request, FacebookBatchResponsePart)]), Seq[Request]] = {
-    case (false, incomplete) ⇒ incomplete map { reqRes ⇒
-      paginateRequest(originalRequest = reqRes._1, response = reqRes._2)
-    }
-  }
-
-  private def paginateRequest(originalRequest: Request, response: FacebookBatchResponsePart): RangedRequest = {
-    val paging = (response.bodyJson \ "paging").validate[FacebookPagingInfo].get
-    RangedRequest(since = paging.nextSinceLong.get, until = paging.nextUntilLong.get, originalRequest)
+  private def newRequestFromIncompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): Request = {
+    val paging = (reqRes._2.bodyJson \ "paging").validate[FacebookPagingInfo].get
+    reqRes._1.asInstanceOf[RangedRequest].copy(currentSince = paging.nextSinceLong, currentUntil = paging.nextUntilLong)
   }
 
   private def isRequestComplete(reqRes: (Request, FacebookBatchResponsePart)): Boolean = {
     reqRes match {
       case (request: RangedRequest, response: FacebookBatchResponsePart) ⇒
         if (response.code == 200) {
-          (response.bodyJson \ "paging").validate[FacebookPagingInfo] match {
-            case paging: JsSuccess[FacebookPagingInfo] ⇒
-              // TODO: what if this never ends up finishing? time out outside? max attempts?
-              paging.get.nextUntilLong.exists(_ >= request.until)
-            case e: JsError ⇒
-              // TODO: log
-              true
-          }
+          request.currentUntil.exists(_ >= request.until)
         } else {
           // TODO: how do we handle error responses?
           // error

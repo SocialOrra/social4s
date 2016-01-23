@@ -66,8 +66,6 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
           val since = su(0)(1).toLong
           val until = su(1)(1).toLong
 
-          println(s"since=$since, until=$until")
-
           val (sinceNormalized, untilNormalized) = if (since + until > limit) {
             // asked for more than the limit, return limit
             (since, since + limit)
@@ -80,10 +78,11 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
           val previousUntil = previousSince + limit
           val nextSince = untilNormalized
           val nextUntil = nextSince + limit
+          val values = (sinceNormalized until untilNormalized).map { v ⇒ Json.obj("value" -> v) }
 
           val parts = makeBatchResponsePart(
             body = makeBatchResponsePartBody(
-              data = Seq(makeBatchResponsePartBodyData(value = JsArray(Seq(Json.obj("value" -> "change-me"))))),
+              data = Seq(makeBatchResponsePartBodyData(value = JsArray(values))),
               paging = FacebookPagingInfo.fromLongs(
                 previousSince,
                 previousUntil,
@@ -98,8 +97,8 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
         response
       }
 
-      println("--- jsonRequest=" + batchPartAsJsonOpt.get)
-      println("--- jsonResponse=" + Json.toJson(response.get.parts))
+      //println("--- jsonRequest=" + batchPartAsJsonOpt.get)
+      //println("--- jsonResponse=" + Json.toJson(response.get.parts))
 
       Ok(Json.toJson(response.get.parts))
     }
@@ -138,11 +137,13 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
     implicit lazy val conn = new FacebookConnection
     val requestBuilder = FacebookRequestBuilder()
     requestBuilder.adInsights("123", since = Some(0), until = Some(100))
-    requestBuilder.adInsights("456", since = Some(100), until = Some(500))
+    //requestBuilder.adInsights("456", since = Some(100), until = Some(500))
     val future = requestBuilder.executeWithPagination
     val response = Await.result(future, 10.seconds)
-    println("--- returned & parsed response=" + response)
-
+    //println("--- returned & parsed response=" + response)
+    response.groupBy(_._1).map(_._2.map(_._2).map { part ⇒
+      part
+    }.foreach(println))
     conn.shutdown()
   }
 

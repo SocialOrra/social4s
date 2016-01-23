@@ -85,7 +85,7 @@ object FacebookTestHelpers {
     "values" -> value)
 
   def makeBatchResponsePartBody(data: Seq[JsObject], paging: FacebookPagingInfo): JsObject = Json.obj(
-    "data" -> "",
+    "data" -> data,
     "paging" -> paging.toJson)
 
   def makeBatchResponsePart(code: Int = 200, headers: Seq[FacebookBatchResponsePartHeader] = defaultPartHeaders, body: JsObject): FacebookBatchResponsePart = {

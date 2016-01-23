@@ -53,8 +53,8 @@ case class PostRequest(relativeUrl: String, queryString: Map[String, Seq[String]
   }
 }
 
-case class RangedRequest(since: Long, until: Long, request: Request) extends Request {
-  protected val sinceUntil = Map("since" -> Seq(since.toString), "until" -> Seq(until.toString))
+case class RangedRequest(since: Long, until: Long, request: Request, currentSince: Option[Long] = None, currentUntil: Option[Long] = None) extends Request {
+  protected val sinceUntil = Map("since" -> Seq(currentSince.getOrElse(since).toString), "until" -> Seq(currentUntil.getOrElse(until).toString))
   override val method = request.method
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ sinceUntil
