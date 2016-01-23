@@ -4,6 +4,7 @@ import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnection
 import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart, FacebookPagingInfo }
 import play.api.http.Writeable
+import play.api.libs.json.{ JsObject, JsArray }
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
@@ -32,8 +33,24 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
       // map the response to our internal type
       .map(FacebookBatchResponse.fromWSResponse)
 
-  def executeWithPagination(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] =
+  def executeWithPaginationWithoutMerging(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] =
     _executeWithPagination(requests)
+
+  def executeWithPagination(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Map[Request, Seq[FacebookBatchResponsePart]]] = {
+    _executeWithPagination(requests) map { requestsAndResponses ⇒
+      requestsAndResponses
+        .groupBy(_._1)
+        .mapValues(_.map(_._2))
+        .map { requestAndResponseParts ⇒
+          // TODO: could there be no parts?
+          val request = requestAndResponseParts._1
+          val parts = requestAndResponseParts._2
+          //val combinedBody: String = parts.map(p ⇒ p.bodyJson.validate[JsObject].get).foldLeft(JsObject(Seq.empty))(_ deepMerge _).toString()
+          //val combinedPart = FacebookBatchResponsePart(code = parts.head.code, headers = parts.head.headers, body = combinedBody)
+          (request, parts)
+        }
+    }
+  }
 
   private def _executeWithPagination(requests: Seq[Request], completedRequests: Seq[(Request, FacebookBatchResponsePart)] = Seq.empty)(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] = {
 

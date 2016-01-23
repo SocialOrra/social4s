@@ -87,7 +87,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
           val parts = makeBatchResponsePart(
             body = makeBatchResponsePartBody(
-              data = Seq(makeBatchResponsePartBodyData(value = JsArray(values))),
+              data = Seq(makeBatchResponsePartBodyData(name = s"s$sinceNormalized-u$untilNormalized", value = JsArray(values))),
               paging = FacebookPagingInfo.fromLongs(
                 previousSince,
                 previousUntil,
@@ -148,7 +148,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
     implicit lazy val conn = new FacebookConnection
     val requestBuilder = FacebookRequestBuilder()
     requests.foreach { r ⇒ requestBuilder.adInsights(r._1, since = r._2, until = r._3) }
-    val future = requestBuilder.executeWithPagination
+    val future = requestBuilder.executeWithPaginationWithoutMerging
     val response = Await.result(future, 10.seconds)
 
     //println("--- returned & parsed response=" + response)
@@ -179,6 +179,27 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
         assert(lastValue.get >= reqSinceUntil._2.get)
       }
+
+    val future2 = requestBuilder.executeWithPagination
+    val response2 = Await.result(future2, 10.seconds)
+    response2 foreach { reqRes ⇒
+      val request = reqRes._1
+      val responseParts = reqRes._2
+      val reqId = request.relativeUrl.split("/").head
+      val reqSinceUntil = requests.find(_._1 == reqId).map(r ⇒ r._2 -> r._3).get
+      val data = (responseParts.last.bodyJson \ "data").validate[JsArray].get
+      val values = (data.head \ "values").validate[JsArray].get
+      val lastValue = (values.last \ "value").validate[Long]
+
+      println(
+        "=== request ===\n" + request + ":\n" +
+          "=== end condition ===\n" +
+          s"lastValue:${lastValue.get} ?>= reqSinceUntil:${reqSinceUntil._2.get}" + "\n" +
+          //"=== responses ===\n" + responseParts.map(_.bodyJson).mkString("\n") + "\n" +
+          "=== end ===========\n\n")
+
+      assert(lastValue.get >= reqSinceUntil._2.get)
+    }
 
     conn.shutdown()
   }
