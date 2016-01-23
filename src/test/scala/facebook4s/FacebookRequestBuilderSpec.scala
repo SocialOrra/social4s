@@ -137,7 +137,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
     implicit lazy val conn = new FacebookConnection
     val requestBuilder = FacebookRequestBuilder()
     requestBuilder.adInsights("123", since = Some(0), until = Some(100))
-    //requestBuilder.adInsights("456", since = Some(100), until = Some(500))
+    requestBuilder.adInsights("456", since = Some(200), until = Some(600))
     val future = requestBuilder.executeWithPagination
     val response = Await.result(future, 10.seconds)
     //println("--- returned & parsed response=" + response)
