@@ -1,4 +1,4 @@
-package facebook4s
+package facebook4s.connection
 
 case class FacebookConnectionInformation(
   graphApiHost: String = "graph.facebook.com",

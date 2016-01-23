@@ -1,4 +1,6 @@
-package facebook4s
+package facebook4s.api
+
+import facebook4s.request.FacebookRequestBuilder
 
 object FacebookGraphApi {
 

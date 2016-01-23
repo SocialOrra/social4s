@@ -1,5 +1,8 @@
 package facebook4s
 
+import facebook4s.api.AccessToken
+import facebook4s.connection.{ FacebookConnection, FacebookConnectionInformation }
+import facebook4s.response.FacebookBatchResponsePart
 import org.scalatestplus.play._
 
 import play.api.GlobalSettings
@@ -17,7 +20,7 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   import FacebookConnection._
   import FacebookTestHelpers._
-  import implicits._
+  import Implicits._
 
   val jsonAction = Action.async(parse.json) { request ⇒ Future { Ok(request.body) } }
   val echoBodyAction = Action.async(parse.text) { request ⇒ Future { Ok(request.body) } }

@@ -3,6 +3,9 @@ package facebook4s
 import java.io.LineNumberReader
 
 import com.gargoylesoftware.htmlunit.MockWebConnection.RawResponseData
+import facebook4s.api.AccessToken
+import facebook4s.connection.FacebookConnection
+import facebook4s.response.{ FacebookBatchResponse, FacebookPagingInfo, FacebookBatchResponsePart, FacebookBatchResponsePartHeader }
 import play.api.libs.json._
 
 object FacebookTestHelpers {
@@ -86,7 +89,7 @@ object FacebookTestHelpers {
 
   def makeBatchResponsePartBody(data: Seq[JsObject], paging: FacebookPagingInfo): JsObject = Json.obj(
     "data" -> data,
-    "paging" -> paging.toJson)
+    "paging" -> Json.toJson(paging))
 
   def makeBatchResponsePart(code: Int = 200, headers: Seq[FacebookBatchResponsePartHeader] = defaultPartHeaders, body: JsObject): FacebookBatchResponsePart = {
     FacebookBatchResponsePart(code, headers, body.toString)

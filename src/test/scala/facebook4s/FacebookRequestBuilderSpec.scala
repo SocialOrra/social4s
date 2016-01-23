@@ -1,5 +1,9 @@
 package facebook4s
 
+import facebook4s.api.{ FacebookMarketingApi, AccessToken }
+import facebook4s.connection.{ FacebookConnection, FacebookConnectionInformation }
+import facebook4s.request.FacebookRequestBuilder
+import facebook4s.response.FacebookPagingInfo
 import play.api.GlobalSettings
 import play.api.libs.json.{ JsArray, Json }
 import play.api.test._
@@ -23,7 +27,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
   import FacebookConnection._
   import FacebookTestHelpers._
-  import implicits._
+  import Implicits._
 
   val config = ConfigFactory.load("test.conf")
 
@@ -128,7 +132,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
   "Paginate requests" in {
 
-    import facebook4s.FacebookMarketingApi._
+    import FacebookMarketingApi._
 
     implicit lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation(
       graphApiHost = s"localhost:$port",

@@ -1,7 +1,10 @@
-package facebook4s
+package facebook4s.request
 
+import facebook4s._
+import facebook4s.api.AccessToken
+import facebook4s.connection.FacebookConnection
+import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart, FacebookPagingInfo }
 import play.api.http.Writeable
-import play.api.libs.json.{ JsError, JsSuccess }
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
@@ -78,7 +81,6 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
         if (response.code == 200) {
           request.currentUntil.exists(_ >= request.until)
         } else {
-          // TODO: how do we handle error responses?
           // error
           true
         }

@@ -1,11 +1,12 @@
-package facebook4s
+package facebook4s.connection
 
 import java.nio.ByteBuffer
 
 import com.ning.http.client.FluentCaseInsensitiveStringsMap
 import com.ning.http.client.multipart.{ ByteArrayPart, MultipartUtils }
-import play.api.libs.ws.{ WSRequest, WSResponse }
+import facebook4s.api.AccessToken
 import play.api.http.Writeable
+import play.api.libs.ws.{ WSRequest, WSResponse }
 
 import scala.concurrent.{ ExecutionContext, Future }
 

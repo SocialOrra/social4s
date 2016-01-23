@@ -1,5 +1,7 @@
-package facebook4s
+package facebook4s.request
 
+import facebook4s.api.AccessToken
+import facebook4s.connection.FacebookConnection
 import play.api.libs.json.{ JsObject, JsString }
 
 trait Request {

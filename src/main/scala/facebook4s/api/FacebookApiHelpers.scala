@@ -1,4 +1,4 @@
-package facebook4s
+package facebook4s.api
 
 trait FacebookApiHelpers {
   /** Converts a sequence of key/value pairs into a map of key to sequence of values if and

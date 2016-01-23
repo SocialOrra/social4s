@@ -1,4 +1,4 @@
-package facebook4s
+package facebook4s.response
 
 import play.api.libs.json.Json
 import play.api.libs.ws.WSResponse
@@ -12,8 +12,6 @@ object FacebookBatchResponse {
     implicit val facebookBatchResponsePartFmt = Json.format[FacebookBatchResponsePart]
     implicit val facebookBatchResponseFmt = Json.format[FacebookBatchResponse]
   }
-
-  import implicits._
 
   def fromWSResponse(wsResponse: WSResponse): FacebookBatchResponse = {
     FacebookBatchResponse(wsResponse.status, wsResponse.allHeaders, wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty))
