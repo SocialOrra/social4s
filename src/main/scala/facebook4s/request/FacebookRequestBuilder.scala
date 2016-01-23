@@ -1,6 +1,5 @@
 package facebook4s.request
 
-import facebook4s._
 import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnection
 import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart, FacebookPagingInfo }
