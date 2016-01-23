@@ -63,10 +63,8 @@ object FacebookConnection {
   private[facebook4s] def accessTokenQS(accessToken: AccessToken): (String, String) =
     ACCESS_TOKEN -> accessToken.token
 
-  private[facebook4s] def boundary: String = {
-    // TODO: generate this
-    "------------------------022a3c34ef7f73dd"
-  }
+  private[facebook4s] val boundary: String =
+    "------------------------" + scala.util.Random.alphanumeric.take(16).mkString
 }
 
 class FacebookConnection(implicit cfg: FacebookConnectionInformation) {
