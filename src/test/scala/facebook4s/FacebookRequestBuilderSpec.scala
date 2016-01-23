@@ -11,7 +11,8 @@ import play.api.mvc._
 import play.api.mvc.BodyParsers._
 import play.api.mvc.Results._
 
-import scala.collection.immutable.TreeMap
+import scala.collection.immutable.{ HashMap, TreeMap }
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 
@@ -138,16 +139,47 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
       graphApiHost = s"localhost:$port",
       protocol = "http")
 
+    val requests = Seq(
+      ("123", Some(0L), Some(100L)),
+      ("456", Some(200L), Some(600L)),
+      ("789", Some(300L), Some(400L)),
+      ("101", Some(10L), Some(900L)))
+
     implicit lazy val conn = new FacebookConnection
     val requestBuilder = FacebookRequestBuilder()
-    requestBuilder.adInsights("123", since = Some(0), until = Some(100))
-    requestBuilder.adInsights("456", since = Some(200), until = Some(600))
+    requests.foreach { r ⇒ requestBuilder.adInsights(r._1, since = r._2, until = r._3) }
     val future = requestBuilder.executeWithPagination
     val response = Await.result(future, 10.seconds)
+
     //println("--- returned & parsed response=" + response)
-    response.groupBy(_._1).map(_._2.map(_._2).map { part ⇒
-      part
-    }.foreach(println))
+    //response.groupBy(_._1).map(_._2.map(_._2).map { part ⇒
+    //  part
+    //}.foreach(println))
+
+    response
+      .groupBy(_._1)
+      .mapValues(_.map(_._2))
+      .foreach { kv ⇒
+
+        val request = kv._1
+        val responseParts = kv._2
+
+        val reqId = request.relativeUrl.split("/").head
+        val reqSinceUntil = requests.find(_._1 == reqId).map(r ⇒ r._2 -> r._3).get
+        val data = (responseParts.last.bodyJson \ "data").validate[JsArray].get
+        val values = (data.head \ "values").validate[JsArray].get
+        val lastValue = (values.last \ "value").validate[Long]
+
+        println(
+          "=== request ===\n" + request + ":\n" +
+            "=== end condition ===\n" +
+            s"lastValue:${lastValue.get} ?>= reqSinceUntil:${reqSinceUntil._2.get}" + "\n" +
+            //"=== responses ===\n" + responseParts.map(_.bodyJson).mkString("\n") + "\n" +
+            "=== end ===========\n\n")
+
+        assert(lastValue.get >= reqSinceUntil._2.get)
+      }
+
     conn.shutdown()
   }
 

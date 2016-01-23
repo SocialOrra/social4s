@@ -1,6 +1,6 @@
 package facebook4s.response
 
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json.Json
 
 /** Represents a batch response header with a name and value.
  */
