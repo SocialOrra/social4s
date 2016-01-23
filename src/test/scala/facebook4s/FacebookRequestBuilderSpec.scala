@@ -57,8 +57,8 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
           .map(_.as[String]
             .split("\\?")
             .tail
-            .head.
-            split("&")
+            .head
+            .split("&")
             .filter(s ⇒ s.startsWith("since=") || s.startsWith("until="))
             .map(_.split("=")))
 
