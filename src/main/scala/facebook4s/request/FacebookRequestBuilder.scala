@@ -2,7 +2,7 @@ package facebook4s.request
 
 import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnection
-import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart, FacebookPagingInfo }
+import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart, FacebookTimePaging$ }
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
@@ -73,26 +73,23 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
   }
 
   private def accumulateCompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): (Request, FacebookBatchResponsePart) = reqRes match {
-    case (req: RangedRequest, res) ⇒ (req.request, res) // original request so we can group all parts on it later
-    case r                         ⇒ r
+    case (req: TimeRangedRequest, res) ⇒ (req.request, res) // original request so we can group all parts on it later
+    case r                             ⇒ r
   }
 
   private def newRequestFromIncompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): Request = {
-    val paging = (reqRes._2.bodyJson \ "paging").validate[FacebookPagingInfo].get
-    reqRes._1.asInstanceOf[RangedRequest].copy(currentSince = paging.nextSinceLong, currentUntil = paging.nextUntilLong)
+    reqRes._1.asInstanceOf[PaginatedRequest[_]].nextRequest(reqRes._2)
   }
 
   private def isRequestComplete(reqRes: (Request, FacebookBatchResponsePart)): Boolean = {
-    reqRes match {
-      case (request: RangedRequest, response: FacebookBatchResponsePart) ⇒
-        if (response.code == 200) {
-          request.currentUntil.exists(_ >= request.until)
-        } else {
-          // error
-          true
-        }
+    val request = reqRes._1
+    val response = reqRes._2
 
-      case (request: Request, response: FacebookBatchResponsePart) ⇒ true
+    if (response.code == 200) {
+      request.isComplete(reqRes._2)
+    } else {
+      // error
+      true
     }
   }
 
@@ -103,7 +100,7 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
   }
 
   private def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request =
-    if (since.isDefined && until.isDefined) RangedRequest(since.get, until.get, request)
+    if (since.isDefined && until.isDefined) TimeRangedRequest(since.get, until.get, request)
     else request
 
   private def batch(request: Request): this.type = {

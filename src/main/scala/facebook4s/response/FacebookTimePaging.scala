@@ -2,9 +2,10 @@ package facebook4s.response
 
 import play.api.libs.json.Json
 
-/** Represents paging information within a Facebook response.
+/** Represents time based paging information within a Facebook response.
+ *  (previous and next are unix time stamps)
  */
-case class FacebookPagingInfo(previous: String, next: String) {
+case class FacebookTimePaging(previous: String, next: String) {
 
   lazy val previousSinceLong = longValue(previous, "since")
   lazy val previousUntilLong = longValue(previous, "until")
@@ -20,10 +21,11 @@ case class FacebookPagingInfo(previous: String, next: String) {
       .flatMap(s ⇒ if (s.length > 0) Some(s.toLong) else None)
 }
 
-object FacebookPagingInfo {
-  implicit val pagingFmt = Json.format[FacebookPagingInfo]
+object FacebookTimePaging {
+  implicit val pagingFmt = Json.format[FacebookTimePaging]
 
   def fromLongs(previousSince: Long, previousUntil: Long, nextSince: Long, nextUntil: Long) = {
-    FacebookPagingInfo(s"since=$previousSince&until=$previousUntil", s"since=$nextSince&until=$nextUntil")
+    FacebookTimePaging(s"since=$previousSince&until=$previousUntil", s"since=$nextSince&until=$nextUntil")
   }
 }
+

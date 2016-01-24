@@ -2,6 +2,7 @@ package facebook4s.request
 
 import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnection
+import facebook4s.response.{ FacebookTimePaging, FacebookTimePaging$, FacebookBatchResponsePart }
 import play.api.libs.json.{ JsObject, JsString }
 
 trait Request {
@@ -10,6 +11,7 @@ trait Request {
   val queryString: Map[String, Seq[String]]
   val accessToken: Option[AccessToken]
 
+  def isComplete(response: FacebookBatchResponsePart): Boolean
   def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String
 }
 
@@ -32,11 +34,16 @@ object Request {
   }
 }
 
+trait PaginatedRequest[PaginationInfo] extends Request {
+  def nextRequest(responsePart: FacebookBatchResponsePart): PaginatedRequest[PaginationInfo]
+}
+
 trait HttpMethod { val name: String }
 case object GetMethod extends HttpMethod { override val name = "GET" }
 case object PostMethod extends HttpMethod { override val name = "POST" }
 
 case class GetRequest(relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], method: HttpMethod = GetMethod) extends Request {
+  override def isComplete(response: FacebookBatchResponsePart): Boolean = true
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
@@ -45,7 +52,7 @@ case class GetRequest(relativeUrl: String, queryString: Map[String, Seq[String]]
 }
 
 case class PostRequest(relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], body: Option[String], method: HttpMethod = PostMethod) extends Request {
-
+  override def isComplete(response: FacebookBatchResponsePart): Boolean = true
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
@@ -55,11 +62,16 @@ case class PostRequest(relativeUrl: String, queryString: Map[String, Seq[String]
   }
 }
 
-case class RangedRequest(since: Long, until: Long, request: Request, currentSince: Option[Long] = None, currentUntil: Option[Long] = None) extends Request {
+case class TimeRangedRequest(since: Long, until: Long, request: Request, currentSince: Option[Long] = None, currentUntil: Option[Long] = None) extends PaginatedRequest[FacebookTimePaging] {
   protected val sinceUntil = Map("since" -> Seq(currentSince.getOrElse(since).toString), "until" -> Seq(currentUntil.getOrElse(until).toString))
   override val method = request.method
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ sinceUntil
   override val accessToken = request.accessToken
+  override def isComplete(response: FacebookBatchResponsePart): Boolean = currentUntil.exists(_ >= until)
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ sinceUntil)
+  override def nextRequest(responsePart: FacebookBatchResponsePart): TimeRangedRequest = {
+    val paging = (responsePart.bodyJson \ "paging").validate[FacebookTimePaging].get
+    copy(currentSince = paging.nextSinceLong, currentUntil = paging.nextUntilLong)
+  }
 }

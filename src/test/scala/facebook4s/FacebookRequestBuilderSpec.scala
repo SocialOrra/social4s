@@ -3,7 +3,7 @@ package facebook4s
 import facebook4s.api.{ FacebookMarketingApi, AccessToken }
 import facebook4s.connection.{ FacebookConnection, FacebookConnectionInformation }
 import facebook4s.request.FacebookRequestBuilder
-import facebook4s.response.FacebookPagingInfo
+import facebook4s.response.FacebookTimePaging
 import play.api.GlobalSettings
 import play.api.libs.json.{ JsArray, Json }
 import play.api.test._
@@ -86,7 +86,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
           val parts = makeBatchResponsePart(
             body = makeBatchResponsePartBody(
               data = Seq(makeBatchResponsePartBodyData(name = s"s$sinceNormalized-u$untilNormalized", value = JsArray(values))),
-              paging = FacebookPagingInfo.fromLongs(
+              paging = FacebookTimePaging.fromLongs(
                 previousSince,
                 previousUntil,
                 nextSince,
