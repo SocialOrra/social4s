@@ -24,24 +24,24 @@ object FacebookConnection {
       keyAndValues._2.map(value ⇒ (key, value)).toList
     }).toSeq
 
-  private[facebook4s] def buildGet(url: String, fields: Map[String, Seq[String]])(implicit accessToken: AccessToken, cfg: FacebookConnectionInformation): WSRequest = {
+  private[facebook4s] def buildGet(url: String, fields: Map[String, Seq[String]])(implicit accessToken: AccessToken, client: WSClient, cfg: FacebookConnectionInformation): WSRequest = {
 
-    WSClient.client
+    client.get
       .url(http(cfg.protocol, cfg.graphApiHost, cfg.version, url))
       .withQueryString(queryStringToSeq(fields) :+ accessTokenQS(accessToken): _*)
       .withMethod(GET)
   }
 
   private[facebook4s] def buildPost[T](url: String, body: T, fields: Map[String, Seq[String]])(
-    implicit accessToken: AccessToken, cfg: FacebookConnectionInformation, bodyWriteable: Writeable[T]): WSRequest = {
-    WSClient.client
+    implicit accessToken: AccessToken, client: WSClient, cfg: FacebookConnectionInformation, bodyWriteable: Writeable[T]): WSRequest = {
+    client.get
       .url(http(cfg.protocol, cfg.graphApiHost, cfg.version, url))
       .withQueryString(queryStringToSeq(fields) :+ accessTokenQS(accessToken): _*)
       .withMethod(POST)
       .withBody[T](body)(bodyWriteable)
   }
 
-  private[facebook4s] def buildBatch(parts: Seq[(String, Array[Byte])])(implicit cfg: FacebookConnectionInformation): WSRequest = {
+  private[facebook4s] def buildBatch(parts: Seq[(String, Array[Byte])])(implicit client: WSClient, cfg: FacebookConnectionInformation): WSRequest = {
 
     val byteArrayParts = parts.map(p ⇒ new ByteArrayPart(p._1, p._2))
     val headers = new FluentCaseInsensitiveStringsMap().add("Content-Type", s"multipart/form-data; boundary=$boundary")
@@ -50,7 +50,7 @@ object FacebookConnection {
     val buf = ByteBuffer.allocate(request.getContentLength.toInt)
     request.read(buf)
 
-    WSClient.client
+    client.get
       .url(http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH))
       .withHeaders(("Content-Type", s"multipart/form-data; boundary=$boundary"))
       .withMethod(POST)
@@ -70,6 +70,7 @@ object FacebookConnection {
 class FacebookConnection(implicit cfg: FacebookConnectionInformation) {
 
   import FacebookConnection._
+  implicit private val client = new WSClient
 
   def get(url: String, fields: Map[String, Seq[String]])(implicit accessToken: AccessToken): Future[WSResponse] =
     buildGet(url, fields).execute(GET)
@@ -81,6 +82,6 @@ class FacebookConnection(implicit cfg: FacebookConnectionInformation) {
     buildBatch(parts).execute(POST)
 
   def shutdown(): Unit =
-    WSClient.shutdown()
+    client.shutdown()
 }
 

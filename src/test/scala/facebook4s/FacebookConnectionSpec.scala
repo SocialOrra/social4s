@@ -1,8 +1,9 @@
 package facebook4s
 
 import facebook4s.api.AccessToken
-import facebook4s.connection.{ FacebookConnection, FacebookConnectionInformation }
+import facebook4s.connection.{ WSClient, FacebookConnection, FacebookConnectionInformation }
 import facebook4s.response.FacebookBatchResponsePart
+import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.play._
 
 import play.api.GlobalSettings
@@ -16,7 +17,7 @@ import play.api.mvc.Results._
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 
-class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
+class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite with BeforeAndAfterAll {
 
   import FacebookConnection._
   import FacebookTestHelpers._
@@ -42,7 +43,11 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
     graphApiHost = s"localhost:$port",
     protocol = "http")
 
+  implicit lazy val client = new WSClient()
+
   implicit val accessToken = AccessToken("abc", 0L)
+
+  override def afterAll(): Unit = client.shutdown()
 
   "Construct GET requests" in {
     val qs = Map("f1" -> Seq("v1"), "f2" -> Seq("v2"))
