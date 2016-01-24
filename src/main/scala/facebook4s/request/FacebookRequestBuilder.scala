@@ -2,7 +2,7 @@ package facebook4s.request
 
 import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnection
-import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart, FacebookTimePaging$ }
+import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart }
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
