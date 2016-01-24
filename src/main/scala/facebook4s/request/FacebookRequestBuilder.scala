@@ -3,18 +3,9 @@ package facebook4s.request
 import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnection
 import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart, FacebookPagingInfo }
-import play.api.http.Writeable
-import play.api.libs.json.{ JsObject, JsArray }
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
-
-object FacebookRequestBuilder {
-
-  trait Implicits {
-    implicit def writeableToSomeWriteable[T](writeable: Writeable[T]): Option[Writeable[T]] = Some(writeable)
-  }
-}
 
 case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.empty) {
 

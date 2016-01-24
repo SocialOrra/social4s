@@ -11,8 +11,7 @@ import play.api.mvc._
 import play.api.mvc.BodyParsers._
 import play.api.mvc.Results._
 
-import scala.collection.immutable.{ HashMap, TreeMap }
-import scala.collection.mutable
+import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 
@@ -28,7 +27,6 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
   import FacebookConnection._
   import FacebookTestHelpers._
-  import Implicits._
 
   val config = ConfigFactory.load("test.conf")
 

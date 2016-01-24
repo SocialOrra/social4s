@@ -20,7 +20,6 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite {
 
   import FacebookConnection._
   import FacebookTestHelpers._
-  import Implicits._
 
   val jsonAction = Action.async(parse.json) { request ⇒ Future { Ok(request.body) } }
   val echoBodyAction = Action.async(parse.text) { request ⇒ Future { Ok(request.body) } }
