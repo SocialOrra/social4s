@@ -14,8 +14,14 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
   def get(relativeUrl: String, queryString: Map[String, Seq[String]], since: Option[Long], until: Option[Long], accessToken: Option[AccessToken]): this.type =
     batch(maybeRanged(since, until, GetRequest(relativeUrl, queryString, accessToken)))
 
+  def get(relativeUrl: String, queryString: Map[String, Seq[String]], paginate: Boolean, accessToken: Option[AccessToken]): this.type =
+    batch(maybePaginated(paginate, GetRequest(relativeUrl, queryString, accessToken)))
+
   def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], since: Option[Long], until: Option[Long], accessToken: Option[AccessToken]): this.type =
     batch(maybeRanged(since, until, PostRequest(relativeUrl, queryString, accessToken, body)))
+
+  def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], paginated: Boolean, accessToken: Option[AccessToken]): this.type =
+    batch(maybePaginated(paginated, PostRequest(relativeUrl, queryString, accessToken, body)))
 
   def execute(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[FacebookBatchResponse] =
     facebookConnection
@@ -73,8 +79,8 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
   }
 
   private def accumulateCompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): (Request, FacebookBatchResponsePart) = reqRes match {
-    case (req: TimeRangedRequest, res) ⇒ (req.request, res) // original request so we can group all parts on it later
-    case r                             ⇒ r
+    case (req: PaginatedRequest[_], res) ⇒ (req.originalRequest, res) // original request so we can group all parts on it later
+    case rr                              ⇒ rr
   }
 
   private def newRequestFromIncompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): Request = {
@@ -101,6 +107,10 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
 
   private def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request =
     if (since.isDefined && until.isDefined) TimeRangedRequest(since.get, until.get, request)
+    else request
+
+  private def maybePaginated(paginated: Boolean, request: Request): Request =
+    if (paginated) CursorPaginatedRequest(request)
     else request
 
   private def batch(request: Request): this.type = {

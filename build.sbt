@@ -31,3 +31,34 @@ lazy val f4s = (project in file(".")).
     libraryDependencies ++= f4sDeps).
   settings(Format.settings) 
 
+initialCommands in console :=
+  s"""
+    | import scala.concurrent.duration._
+    | import scala.concurrent.Await
+    | import scala.concurrent.ExecutionContext.Implicits._
+    |
+    | import facebook4s._
+    | import facebook4s.request._
+    | import facebook4s.response._
+    | import facebook4s.connection._
+    | import facebook4s.api._
+    | import facebook4s.api.FacebookMarketingApi._
+    | import facebook4s.api.FacebookGraphApi._
+    | import com.typesafe.config.ConfigFactory
+    |
+    | val config = ConfigFactory.load()
+    | val accessTokenStr = config.getString("facebook4s.console.access-token")
+    |
+    | implicit val a = AccessToken(accessTokenStr, 0L)
+    | implicit val sa = Some(a)
+    | implicit val cfg = new FacebookConnectionInformation
+    | implicit val conn = new FacebookConnection
+    |
+    | val requestBuilder = FacebookRequestBuilder()
+    |""".stripMargin
+
+cleanupCommands in console :=
+  s"""
+     | conn.shutdown()
+   """.stripMargin
+
