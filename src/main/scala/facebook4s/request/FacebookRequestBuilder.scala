@@ -79,12 +79,12 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
   }
 
   private def accumulateCompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): (Request, FacebookBatchResponsePart) = reqRes match {
-    case (req: PaginatedRequest[_], res) ⇒ (req.originalRequest, res) // original request so we can group all parts on it later
-    case rr                              ⇒ rr
+    case (req: PaginatedRequest[_, _], res) ⇒ (req.originalRequest, res) // original request so we can group all parts on it later
+    case rr                                 ⇒ rr
   }
 
   private def newRequestFromIncompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): Request = {
-    reqRes._1.asInstanceOf[PaginatedRequest[_]].nextRequest(reqRes._2)
+    reqRes._1.asInstanceOf[PaginatedRequest[_, _]].nextRequest(reqRes._2)
   }
 
   private def isRequestComplete(reqRes: (Request, FacebookBatchResponsePart)): Boolean = {

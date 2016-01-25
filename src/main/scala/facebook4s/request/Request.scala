@@ -10,8 +10,8 @@ trait Request {
   val relativeUrl: String
   val queryString: Map[String, Seq[String]]
   val accessToken: Option[AccessToken]
-
-  def isComplete(response: FacebookBatchResponsePart): Boolean
+  val completionEvaluator: CompletionEvaluation
+  def isComplete(response: FacebookBatchResponsePart): Boolean = completionEvaluator(this, response)
   def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String
 }
 
@@ -34,9 +34,9 @@ object Request {
   }
 }
 
-trait PaginatedRequest[PaginationInfo] extends Request {
+trait PaginatedRequest[R <: Request, PaginationInfo] extends Request {
   def originalRequest: Request
-  def nextRequest(responsePart: FacebookBatchResponsePart): PaginatedRequest[PaginationInfo]
+  def nextRequest(responsePart: FacebookBatchResponsePart): PaginatedRequest[R, PaginationInfo]
 }
 
 trait HttpMethod { val name: String }
@@ -44,7 +44,7 @@ case object GetMethod extends HttpMethod { override val name = "GET" }
 case object PostMethod extends HttpMethod { override val name = "POST" }
 
 case class GetRequest(relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], method: HttpMethod = GetMethod) extends Request {
-  override def isComplete(response: FacebookBatchResponsePart): Boolean = true
+  override val completionEvaluator = new TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
@@ -53,7 +53,7 @@ case class GetRequest(relativeUrl: String, queryString: Map[String, Seq[String]]
 }
 
 case class PostRequest(relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], body: Option[String], method: HttpMethod = PostMethod) extends Request {
-  override def isComplete(response: FacebookBatchResponsePart): Boolean = true
+  override val completionEvaluator = new TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
@@ -63,14 +63,14 @@ case class PostRequest(relativeUrl: String, queryString: Map[String, Seq[String]
   }
 }
 
-case class TimeRangedRequest(since: Long, until: Long, request: Request, currentSince: Option[Long] = None, currentUntil: Option[Long] = None) extends PaginatedRequest[FacebookTimePaging] {
+case class TimeRangedRequest(since: Long, until: Long, request: Request, currentSince: Option[Long] = None, currentUntil: Option[Long] = None) extends PaginatedRequest[TimeRangedRequest, FacebookTimePaging] {
   protected lazy val sinceUntil = Map("since" -> Seq(currentSince.getOrElse(since).toString), "until" -> Seq(currentUntil.getOrElse(until).toString))
   override val method = request.method
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ sinceUntil
   override val accessToken = request.accessToken
   override def originalRequest = copy(currentSince = None, currentUntil = None)
-  override def isComplete(response: FacebookBatchResponsePart): Boolean = currentUntil.exists(_ >= until)
+  override val completionEvaluator = TimeRangeCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ sinceUntil)
   override def nextRequest(responsePart: FacebookBatchResponsePart): TimeRangedRequest = {
     val paging = (responsePart.bodyJson \ "paging").validate[FacebookTimePaging].get
@@ -78,18 +78,39 @@ case class TimeRangedRequest(since: Long, until: Long, request: Request, current
   }
 }
 
-case class CursorPaginatedRequest(request: Request, paging: Option[FacebookCursorPaging] = None) extends PaginatedRequest[FacebookCursorPaging] {
+trait CompletionEvaluation extends ((Request, FacebookBatchResponsePart) ⇒ Boolean)
+
+class TrueCompletionEvaluation extends CompletionEvaluation {
+  override def apply(request: Request, response: FacebookBatchResponsePart): Boolean = true
+}
+
+object TimeRangeCompletionEvaluation extends CompletionEvaluation {
+  override def apply(request: Request, response: FacebookBatchResponsePart): Boolean = {
+    request.asInstanceOf[TimeRangedRequest].currentUntil.exists(_ >= request.asInstanceOf[TimeRangedRequest].until)
+  }
+}
+
+//object TimeBoundCompletionEvaluation extends CompletionEvaluation[Request] {
+//  override def apply(request: Request, response: FacebookBatchResponsePart): Boolean = {
+//    // TODO: implement this
+//    ???
+//  }
+//}
+
+object EmptyNextPageCompletionEvaluation extends CompletionEvaluation {
+  override def apply(request: Request, response: FacebookBatchResponsePart): Boolean = {
+    val paging = (response.bodyJson \ "paging").validate[FacebookCursorPaging].get
+    paging.next.isEmpty
+  }
+}
+
+case class CursorPaginatedRequest(request: Request, paging: Option[FacebookCursorPaging] = None, completionEvaluator: CompletionEvaluation = EmptyNextPageCompletionEvaluation) extends PaginatedRequest[CursorPaginatedRequest, FacebookCursorPaging] {
   protected lazy val after = paging.map(p ⇒ Map("after" -> Seq(p.cursors.after))).getOrElse(Map.empty)
   override val method = request.method
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ after
   override val accessToken = request.accessToken
   override def originalRequest = copy(paging = None)
-  override def isComplete(response: FacebookBatchResponsePart): Boolean = {
-    println(s"response=$response")
-    val paging = (response.bodyJson \ "paging").validate[FacebookCursorPaging].get
-    paging.next.isEmpty
-  }
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ after)
   override def nextRequest(responsePart: FacebookBatchResponsePart): CursorPaginatedRequest = {
     val paging = (responsePart.bodyJson \ "paging").validate[FacebookCursorPaging].get
