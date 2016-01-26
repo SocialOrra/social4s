@@ -17,9 +17,6 @@ object FacebookMarketingApi extends FacebookApiHelpers {
       val modifiers = buildModifiers("period" -> period)
       requestBuilder.get(relativeUrl, modifiers, since, until, accessToken)
     }
-
-    //def campaignInsights(campaignId: String, accessToken: Option[AccessToken] = None) = requestBuilder.get(s"$campaignId/insights", Map.empty, accessToken)
-    //def adSetInsights(adSetId: String, accessToken: Option[AccessToken] = None) = requestBuilder.get(s"$adSetId/insights", Map.empty, accessToken)
   }
 }
 

@@ -3,7 +3,7 @@ package facebook4s.request
 import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnection
 import facebook4s.response.{ FacebookCursorPaging, FacebookTimePaging, FacebookBatchResponsePart }
-import play.api.libs.json.{ JsObject, JsString }
+import play.api.libs.json._
 
 trait Request {
   val method: HttpMethod
@@ -90,12 +90,55 @@ object TimeRangeCompletionEvaluation extends CompletionEvaluation {
   }
 }
 
-//object TimeBoundCompletionEvaluation extends CompletionEvaluation[Request] {
-//  override def apply(request: Request, response: FacebookBatchResponsePart): Boolean = {
-//    // TODO: implement this
-//    ???
-//  }
-//}
+case class Value(end_time: String)
+case class Datum(values: Seq[Value])
+case class Data(data: Seq[Datum])
+
+object Value {
+  implicit val fmt = Json.format[Value]
+}
+object Datum {
+  implicit val fmt = Json.format[Datum]
+}
+object Data {
+  implicit val fmt = Json.format[Data]
+}
+
+trait ConditionChecker[T]  {
+  def apply(e1: T, e2: T): Boolean
+}
+
+trait JsonExtractor[T] {
+  def apply(json: JsValue, checker: ConditionChecker[T]): (T => Boolean)
+}
+
+class TrueChecker[T]() extends ConditionChecker[T] {
+  override def apply(ignored: T, ignored2: T): Boolean = true
+}
+
+object JsonConditions {
+
+  object data$values$end_time extends JsonExtractor[String] {
+
+    def apply(jsonResponseBody: JsValue, checker: ConditionChecker[String]): (String => Boolean) = {
+      jsonResponseBody
+        .validate[Data]
+        .asOpt
+        .flatMap { d =>
+          d.data
+            .lastOption
+            .flatMap(_.values.lastOption)
+            .map(lastValue => checker.apply(lastValue.end_time, _: String))
+        }.getOrElse(new TrueChecker[String].apply("", _)) // true if we failed to find what we're looking for
+    }
+  }
+}
+
+class JsonConditionCompletionEvaluation[T](jsonExtractor: JsonExtractor[T], checker: ConditionChecker[T], completionConditionValue: T) extends CompletionEvaluation {
+
+  override def apply(request: Request, response: FacebookBatchResponsePart): Boolean =
+    jsonExtractor.apply(response.bodyJson, checker).apply(completionConditionValue)
+}
 
 object EmptyNextPageCompletionEvaluation extends CompletionEvaluation {
   override def apply(request: Request, response: FacebookBatchResponsePart): Boolean = {
