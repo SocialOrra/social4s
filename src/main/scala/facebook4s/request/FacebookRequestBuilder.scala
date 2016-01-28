@@ -7,7 +7,7 @@ import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
 
-case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.empty) {
+case class FacebookRequestBuilder(var requests: ListBuffer[Request] = ListBuffer.empty) {
 
   import FacebookConnection._
 
@@ -23,18 +23,25 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
   def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], paginated: Boolean, accessToken: Option[AccessToken]): FacebookRequestBuilder =
     batch(maybePaginated(paginated, PostRequest(relativeUrl, queryString, accessToken, body)))
 
-  def execute(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[FacebookBatchResponse] =
-    facebookConnection
+  def execute(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[FacebookBatchResponse] = {
+    val f = facebookConnection
       // assemble request parts and send it off
       .batch(makeParts(accessToken, requests))
       // map the response to our internal type
       .map(FacebookBatchResponse.fromWSResponse)
 
-  def executeWithPaginationWithoutMerging(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] =
-    _executeWithPagination(requests)
+    postExecute()
+    f
+  }
+
+  def executeWithPaginationWithoutMerging(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] = {
+    val f = _executeWithPagination(requests)
+    postExecute()
+    f
+  }
 
   def executeWithPagination(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Map[Request, Seq[FacebookBatchResponsePart]]] = {
-    _executeWithPagination(requests) map { requestsAndResponses ⇒
+    val f = _executeWithPagination(requests) map { requestsAndResponses ⇒
       requestsAndResponses
         .groupBy(_._1)
         .mapValues(_.map(_._2))
@@ -47,6 +54,13 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
           (request, parts)
         }
     }
+
+    postExecute()
+    f
+  }
+
+  private def postExecute(): Unit = {
+    requests = ListBuffer.empty
   }
 
   private def _executeWithPagination(requests: Seq[Request], completedRequests: Seq[(Request, FacebookBatchResponsePart)] = Seq.empty)(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[Seq[(Request, FacebookBatchResponsePart)]] = {
