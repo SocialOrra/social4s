@@ -11,16 +11,16 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
 
   import FacebookConnection._
 
-  def get(relativeUrl: String, queryString: Map[String, Seq[String]], since: Option[Long], until: Option[Long], accessToken: Option[AccessToken]): this.type =
+  def get(relativeUrl: String, queryString: Map[String, Seq[String]], since: Option[Long], until: Option[Long], accessToken: Option[AccessToken]): FacebookRequestBuilder =
     batch(maybeRanged(since, until, GetRequest(relativeUrl, queryString, accessToken)))
 
-  def get(relativeUrl: String, queryString: Map[String, Seq[String]], paginate: Boolean, accessToken: Option[AccessToken]): this.type =
+  def get(relativeUrl: String, queryString: Map[String, Seq[String]], paginate: Boolean, accessToken: Option[AccessToken]): FacebookRequestBuilder =
     batch(maybePaginated(paginate, GetRequest(relativeUrl, queryString, accessToken)))
 
-  def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], since: Option[Long], until: Option[Long], accessToken: Option[AccessToken]): this.type =
+  def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], since: Option[Long], until: Option[Long], accessToken: Option[AccessToken]): FacebookRequestBuilder =
     batch(maybeRanged(since, until, PostRequest(relativeUrl, queryString, accessToken, body)))
 
-  def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], paginated: Boolean, accessToken: Option[AccessToken]): this.type =
+  def post(relativeUrl: String, body: Option[String], queryString: Map[String, Seq[String]], paginated: Boolean, accessToken: Option[AccessToken]): FacebookRequestBuilder =
     batch(maybePaginated(paginated, PostRequest(relativeUrl, queryString, accessToken, body)))
 
   def execute(implicit facebookConnection: FacebookConnection, accessToken: Option[AccessToken] = None, ec: ExecutionContext): Future[FacebookBatchResponse] =
@@ -113,7 +113,7 @@ case class FacebookRequestBuilder(requests: ListBuffer[Request] = ListBuffer.emp
     if (paginated) CursorPaginatedRequest(request)
     else request
 
-  private def batch(request: Request): this.type = {
+  private def batch(request: Request): FacebookRequestBuilder = {
     requests += request
     this
   }
