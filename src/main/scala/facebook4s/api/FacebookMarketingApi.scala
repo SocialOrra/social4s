@@ -11,8 +11,7 @@ object FacebookMarketingApi extends FacebookApiHelpers {
       period: Option[String] = None,
       since: Option[Long] = None,
       until: Option[Long] = None,
-      accessToken: Option[AccessToken] = None): FacebookRequestBuilder = {
-
+      accessToken: Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl(adId, "insights", metric)
       val modifiers = buildModifiers("period" -> period)
       requestBuilder.get(relativeUrl, modifiers, since, until, accessToken)

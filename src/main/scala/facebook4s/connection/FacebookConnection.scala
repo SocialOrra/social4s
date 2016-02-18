@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 import com.ning.http.client.FluentCaseInsensitiveStringsMap
 import com.ning.http.client.multipart.{ ByteArrayPart, MultipartUtils }
 import facebook4s.api.AccessToken
+import http.client.connection.HttpConnection
 import play.api.http.Writeable
 import play.api.libs.ws.{ WSRequest, WSResponse }
 
@@ -67,7 +68,7 @@ object FacebookConnection {
     "------------------------" + scala.util.Random.alphanumeric.take(16).mkString
 }
 
-class FacebookConnection(implicit cfg: FacebookConnectionInformation) {
+class FacebookConnection(implicit cfg: FacebookConnectionInformation) extends HttpConnection[AccessToken] {
 
   import FacebookConnection._
   implicit private val client = new WSClient
@@ -84,4 +85,3 @@ class FacebookConnection(implicit cfg: FacebookConnectionInformation) {
   def shutdown(): Unit =
     client.shutdown()
 }
-

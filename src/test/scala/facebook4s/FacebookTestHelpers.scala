@@ -1,8 +1,5 @@
 package facebook4s
 
-import java.io.LineNumberReader
-
-import com.gargoylesoftware.htmlunit.MockWebConnection.RawResponseData
 import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnection
 import facebook4s.response._

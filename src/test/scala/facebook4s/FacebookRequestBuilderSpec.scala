@@ -119,9 +119,9 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
       }))
 
   "Successfully use the Facebook Graph API" in {
-    val requestBuilder = FacebookRequestBuilder()
+    val requestBuilder = new FacebookRequestBuilder()
 
-    requestBuilder.get("me", Map.empty, since = None, until = None, accessToken = None)
+    requestBuilder.get("me", Map.empty, since = None, until = None, data = None)
     val future = requestBuilder.execute
     val response = Await.result(future, 5.seconds)
 
@@ -144,7 +144,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
       ("101", Some(10L), Some(900L)))
 
     implicit lazy val conn = new FacebookConnection
-    val requestBuilder = FacebookRequestBuilder()
+    val requestBuilder = new FacebookRequestBuilder()
     requests.foreach { r ⇒ requestBuilder.adInsights(r._1, since = r._2, until = r._3) }
     val future = requestBuilder.executeWithPaginationWithoutMerging
     val response = Await.result(future, 10.seconds)
