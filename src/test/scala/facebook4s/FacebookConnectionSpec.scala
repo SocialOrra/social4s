@@ -1,14 +1,14 @@
 package facebook4s
 
 import facebook4s.api.AccessToken
-import facebook4s.connection.{ WSClient, FacebookConnection, FacebookConnectionInformation }
+import facebook4s.connection.{ WSClient, FacebookConnectionInformation }
+import facebook4s.request.FacebookBatchRequestBuilder
 import facebook4s.response.FacebookBatchResponsePart
 import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.play._
 
 import play.api.GlobalSettings
 import play.api.libs.json.Json
-import play.api.test.Helpers._
 import play.api.test._
 import play.api.mvc._
 import play.api.mvc.BodyParsers._
@@ -19,7 +19,6 @@ import scala.concurrent.Future
 
 class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite with BeforeAndAfterAll {
 
-  import FacebookConnection._
   import FacebookTestHelpers._
 
   val jsonAction = Action.async(parse.json) { request ⇒ Future { Ok(request.body) } }
@@ -38,45 +37,6 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite with Before
           }
         }
       }))
-
-  implicit lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation(
-    graphApiHost = s"localhost:$port",
-    protocol = "http")
-
-  implicit lazy val client = new WSClient()
-
-  implicit val accessToken = AccessToken("abc", 0L)
-
-  override def afterAll(): Unit = client.shutdown()
-
-  "Construct GET requests" in {
-    val qs = Map("f1" -> Seq("v1"), "f2" -> Seq("v2"))
-    val request = buildGet("me", qs)
-    val requestUrl = url(cfg.protocol, cfg.graphApiHost, cfg.version, "me", qs, Some(accessToken))
-    assert(request.uri.toString == requestUrl)
-  }
-
-  "Construct POST requests" in {
-    val qs = Map("f1" -> Seq("v1"), "f2" -> Seq("v2"))
-    val request = buildPost("me", "post-body", qs)
-    val requestUrl = url(cfg.protocol, cfg.graphApiHost, cfg.version, "me", qs, Some(accessToken))
-    val response = await(request.execute())
-    assert(request.uri.toString == requestUrl)
-    assert(response.body == "post-body")
-  }
-
-  "Construct batch requests" in {
-    val parts = Seq(
-      "a" -> "a".getBytes("utf-8"),
-      "b" -> "b".getBytes("utf-8"),
-      "c" -> "c".getBytes("utf-8"))
-
-    val request = buildBatch(parts)
-    val requestUrl = url(cfg.protocol, cfg.graphApiHost, cfg.version, "", Map.empty, None)
-    val response = await(request.execute())
-    assert(request.uri.toString == requestUrl)
-    assert(response.body == "aabbcc")
-  }
 
   "Parse batch responses" in {
 

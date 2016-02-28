@@ -1,7 +1,7 @@
 package facebook4s
 
 import facebook4s.api.AccessToken
-import facebook4s.connection.FacebookConnection
+import facebook4s.request.FacebookBatchRequestBuilder
 import facebook4s.response._
 import play.api.libs.json._
 
@@ -110,19 +110,5 @@ object FacebookTestHelpers {
        |{
        |  "value": "$id"
        |}""".stripMargin
-  }
-
-  def url(scheme: String, host: String, version: String, relativeUrl: String, queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]): String = {
-    val qs =
-      FacebookConnection.queryStringToSeq(queryString) ++
-        accessToken.map(a ⇒ Seq(FacebookConnection.accessTokenQS(a))).getOrElse(Seq.empty)
-
-    val qsString = {
-      val q = qs.map { kv ⇒ kv._1 + "=" + kv._2 }.mkString("&")
-      if (q.nonEmpty) "?" + q
-      else q
-    }
-
-    s"$scheme://$host/$version/$relativeUrl$qsString"
   }
 }

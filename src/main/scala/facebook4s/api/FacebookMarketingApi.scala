@@ -1,10 +1,10 @@
 package facebook4s.api
 
-import facebook4s.request.FacebookRequestBuilder
+import facebook4s.request.{ FacebookGetRequest, FacebookBatchRequestBuilder }
 
 object FacebookMarketingApi extends FacebookApiHelpers {
 
-  implicit class FacebookAdsInsightsApi(requestBuilder: FacebookRequestBuilder) {
+  implicit class FacebookAdsInsightsApi(requestBuilder: FacebookBatchRequestBuilder) {
     def adInsights(
       adId: String,
       metric: Option[String] = None,
@@ -14,7 +14,7 @@ object FacebookMarketingApi extends FacebookApiHelpers {
       accessToken: Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl(adId, "insights", metric)
       val modifiers = buildModifiers("period" -> period)
-      requestBuilder.get(relativeUrl, modifiers, since, until, accessToken)
+      requestBuilder.get(FacebookGetRequest(relativeUrl, modifiers, accessToken), since, until)
     }
   }
 }

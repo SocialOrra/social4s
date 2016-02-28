@@ -1,18 +1,14 @@
 package facebook4s.request
 
 import facebook4s.api.AccessToken
-import facebook4s.connection.FacebookConnection
 import facebook4s.response._
 import http.client.method.{ PostMethod, GetMethod, HttpMethod }
 import http.client.request._
 import http.client.response.BatchResponsePart
 import play.api.libs.json._
-import play.api.libs.ws.WSResponse
-
-import scala.collection.mutable.ListBuffer
 
 object TimeRangeCompletionEvaluation extends CompletionEvaluation {
-  override def apply(request: Request[_], response: BatchResponsePart): Boolean = {
+  override def apply(request: Request, response: BatchResponsePart): Boolean = {
     request.asInstanceOf[FacebookTimeRangedRequest].currentUntil.exists(_ >= request.asInstanceOf[FacebookTimeRangedRequest].until)
   }
 }
@@ -62,14 +58,14 @@ object JsonConditions {
 }
 
 class JsonConditionCompletionEvaluation[T](jsonExtractor: JsonExtractor[T], checker: ConditionChecker[T], completionConditionValue: T) extends CompletionEvaluation {
-  override def apply(request: Request[_], response: BatchResponsePart): Boolean =
+  override def apply(request: Request, response: BatchResponsePart): Boolean =
     jsonExtractor.apply(response.bodyJson, checker).apply(completionConditionValue)
 }
 
 ///// facebook api
 
 object FacebookEmptyNextPageCompletionEvaluation extends CompletionEvaluation {
-  override def apply(request: Request[_], response: BatchResponsePart): Boolean = {
+  override def apply(request: Request, response: BatchResponsePart): Boolean = {
     val paging = (response.bodyJson \ "paging").validate[FacebookCursorPaging].get
     paging.next.isEmpty
   }
@@ -86,7 +82,7 @@ object FacebookRequest {
       .mkString("&")
 
   def accessTokenQS(accessToken: AccessToken): (String, Seq[String]) =
-    FacebookConnection.ACCESS_TOKEN -> Seq(accessToken.token)
+    FacebookBatchRequestBuilder.ACCESS_TOKEN -> Seq(accessToken.token)
 
   def maybeQueryString(queryString: Map[String, Seq[String]], accessToken: Option[AccessToken]): String = {
     if (queryString.nonEmpty) "?" + queryStringAsStringWithToken(queryString, accessToken)
@@ -95,7 +91,7 @@ object FacebookRequest {
 }
 
 case class FacebookGetRequest(val relativeUrl: String, val queryString: Map[String, Seq[String]], val data: Option[AccessToken], val method: HttpMethod = GetMethod)
-    extends GetRequest[FacebookConnection, AccessToken](relativeUrl, queryString, data, method) {
+    extends GetRequest(relativeUrl, queryString, method) {
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
@@ -103,8 +99,8 @@ case class FacebookGetRequest(val relativeUrl: String, val queryString: Map[Stri
   }
 }
 
-case class FacebookPostRequest(relativeUrl: String, queryString: Map[String, Seq[String]], data: Option[AccessToken], body: Option[String], method: HttpMethod = PostMethod)
-    extends PostRequest[FacebookConnection, AccessToken](relativeUrl, queryString, data, body, method) {
+case class FacebookPostRequest(relativeUrl: String, queryString: Map[String, Seq[String]], data: Option[AccessToken], override val body: Option[String], method: HttpMethod = PostMethod)
+    extends PostRequest[String](relativeUrl, queryString, body, method) {
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
@@ -114,18 +110,18 @@ case class FacebookPostRequest(relativeUrl: String, queryString: Map[String, Seq
   }
 }
 
-trait FacebookPaginatedRequest extends Request[AccessToken] {
-  def originalRequest: Request[AccessToken]
+trait FacebookPaginatedRequest extends Request {
+  def originalRequest: Request
   def nextRequest(responsePart: BatchResponsePart): FacebookPaginatedRequest
 }
 
-case class FacebookTimeRangedRequest(since: Long, until: Long, request: Request[AccessToken], currentSince: Option[Long] = None, currentUntil: Option[Long] = None)
+case class FacebookTimeRangedRequest(since: Long, until: Long, request: Request, currentSince: Option[Long] = None, currentUntil: Option[Long] = None)
     extends FacebookPaginatedRequest {
   protected lazy val sinceUntil = Map("since" -> Seq(currentSince.getOrElse(since).toString), "until" -> Seq(currentUntil.getOrElse(until).toString))
   override val method = request.method
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ sinceUntil
-  override val data = request.data
+  //override val data = request.data
   override def originalRequest = copy(currentSince = None, currentUntil = None)
   override val completionEvaluator = TimeRangeCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ sinceUntil)
@@ -135,13 +131,13 @@ case class FacebookTimeRangedRequest(since: Long, until: Long, request: Request[
   }
 }
 
-case class FacebookCursorPaginatedRequest(request: Request[AccessToken], paging: Option[FacebookCursorPaging] = None, completionEvaluator: CompletionEvaluation = FacebookEmptyNextPageCompletionEvaluation)
+case class FacebookCursorPaginatedRequest(request: Request, paging: Option[FacebookCursorPaging] = None, completionEvaluator: CompletionEvaluation = FacebookEmptyNextPageCompletionEvaluation)
     extends FacebookPaginatedRequest {
   protected lazy val after = paging.map(p ⇒ Map("after" -> Seq(p.cursors.after))).getOrElse(Map.empty)
   override val method = request.method
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ after
-  override val data = request.data
+  //override val data = request.data
   override def originalRequest = copy(paging = None)
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ after)
   override def nextRequest(responsePart: BatchResponsePart): FacebookCursorPaginatedRequest = {
@@ -150,37 +146,3 @@ case class FacebookCursorPaginatedRequest(request: Request[AccessToken], paging:
   }
 }
 
-class FacebookRequestBuilder(requests: ListBuffer[Request[AccessToken]] = ListBuffer.empty) extends HttpRequestBuilder[FacebookConnection, AccessToken]() {
-
-  import FacebookConnection._
-
-  override protected def maybeRanged(since: Option[Long], until: Option[Long], request: Request[AccessToken]): Request[AccessToken] =
-    if (since.isDefined && until.isDefined) FacebookTimeRangedRequest(since.get, until.get, request)
-    else request
-
-  override protected def maybePaginated(paginated: Boolean, request: Request[AccessToken]): Request[AccessToken] =
-    if (paginated) FacebookCursorPaginatedRequest(request)
-    else request
-
-  override protected def accumulateCompleteRequest(reqRes: (Request[AccessToken], BatchResponsePart)): (Request[AccessToken], BatchResponsePart) = reqRes match {
-    case (req: FacebookPaginatedRequest, res) ⇒ (req.originalRequest, res) // original request so we can group all parts on it later
-    case rr                                   ⇒ rr
-  }
-
-  override protected def newRequestFromIncompleteRequest(reqRes: (Request[AccessToken], BatchResponsePart)): Request[AccessToken] = {
-    reqRes._1.asInstanceOf[FacebookPaginatedRequest].nextRequest(reqRes._2)
-  }
-
-  override protected def get(relativeUrl: String, queryString: Map[String, Seq[String]], data: Option[AccessToken]): Request[AccessToken] = FacebookGetRequest(relativeUrl, queryString, data)
-  override protected def post(relativeUrl: String, queryString: Map[String, Seq[String]], data: Option[AccessToken], body: Option[String]): Request[AccessToken] = FacebookPostRequest(relativeUrl, queryString, data, body)
-
-  override protected def makeParts(accessToken: Option[AccessToken], requests: Seq[Request[AccessToken]]): Seq[(String, Array[Byte])] = {
-    accessToken.map { a ⇒ Seq(ACCESS_TOKEN -> a.token.getBytes("utf-8")) }
-      .getOrElse(Seq.empty[(String, Array[Byte])]) ++
-      Seq(BATCH -> ("[" + requests.map(_.toJson()).mkString(",") + "]").getBytes("utf-8"))
-  }
-
-  override protected def fromWSResponse(wsResponse: WSResponse): FacebookBatchResponse = {
-    FacebookBatchResponse(wsResponse.status, wsResponse.allHeaders, wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty))
-  }
-}

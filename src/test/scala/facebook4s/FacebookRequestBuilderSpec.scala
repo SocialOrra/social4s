@@ -1,9 +1,10 @@
 package facebook4s
 
 import facebook4s.api.{ FacebookMarketingApi, AccessToken }
-import facebook4s.connection.{ FacebookConnection, FacebookConnectionInformation }
-import facebook4s.request.FacebookRequestBuilder
+import facebook4s.connection.FacebookConnectionInformation
+import facebook4s.request.{ FacebookGetRequest, FacebookBatchRequestBuilder }
 import facebook4s.response.FacebookTimePaging
+import http.client.connection.impl.PlayWSHttpConnection
 import play.api.GlobalSettings
 import play.api.libs.json.{ JsArray, Json }
 import play.api.test._
@@ -25,18 +26,15 @@ import scala.concurrent.Await
 
 class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with BeforeAndAfterAll {
 
-  import FacebookConnection._
+  import FacebookBatchRequestBuilder._
   import FacebookTestHelpers._
 
   val config = ConfigFactory.load("test.conf")
 
-  implicit lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation()
-  implicit lazy val conn = new FacebookConnection
-
   val accessToken = AccessToken(config.getString("facebook4s.test.access-token"), 0L)
   val adId = config.getString("facebook4s.test.ad-id")
   val profileName = config.getString("facebook4s.test.profile-name")
-  implicit val accessTokenOpt = Some(accessToken)
+  val accessTokenOpt = Some(accessToken)
 
   val limit = 30
 
@@ -119,11 +117,14 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
       }))
 
   "Successfully use the Facebook Graph API" in {
-    val requestBuilder = new FacebookRequestBuilder()
+    lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation()
+    val requestBuilder = new FacebookBatchRequestBuilder(cfg, new PlayWSHttpConnection, accessTokenOpt)
 
-    requestBuilder.get("me", Map.empty, since = None, until = None, data = None)
+    requestBuilder.get(FacebookGetRequest("me", Map.empty, None), since = None, until = None)
     val future = requestBuilder.execute
     val response = Await.result(future, 5.seconds)
+
+    requestBuilder.shutdown()
 
     assert(response.parts.size == 1)
     assert((response.parts.head.bodyJson \ "name").validate[String].get == profileName)
@@ -143,8 +144,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
       ("789", Some(300L), Some(400L)),
       ("101", Some(10L), Some(900L)))
 
-    implicit lazy val conn = new FacebookConnection
-    val requestBuilder = new FacebookRequestBuilder()
+    val requestBuilder = new FacebookBatchRequestBuilder(cfg, new PlayWSHttpConnection, accessTokenOpt)
     requests.foreach { r ⇒ requestBuilder.adInsights(r._1, since = r._2, until = r._3) }
     val future = requestBuilder.executeWithPaginationWithoutMerging
     val response = Await.result(future, 10.seconds)
@@ -199,10 +199,9 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
       assert(lastValue.get >= reqSinceUntil._2.get)
     }
 
-    conn.shutdown()
+    requestBuilder.shutdown()
   }
 
   override def afterAll(): Unit = {
-    conn.shutdown()
   }
 }
