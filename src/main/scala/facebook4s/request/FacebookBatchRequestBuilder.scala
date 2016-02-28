@@ -5,8 +5,7 @@ import facebook4s.connection.FacebookConnectionInformation
 import facebook4s.response.{ FacebookBatchResponsePart, FacebookBatchResponse }
 import http.client.connection.HttpConnection
 import http.client.request.{ HttpBatchRequestBuilder, Request }
-import http.client.response.BatchResponsePart
-import play.api.libs.ws.WSResponse
+import http.client.response.{ HttpResponse, BatchResponsePart }
 
 import scala.collection.mutable.ListBuffer
 
@@ -51,7 +50,7 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
       Seq(BATCH -> ("[" + requests.map(_.toJson()).mkString(",") + "]").getBytes("utf-8"))
   }
 
-  override protected def fromWSResponse(wsResponse: WSResponse): FacebookBatchResponse = {
-    FacebookBatchResponse(wsResponse.status, wsResponse.allHeaders, wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty))
+  override protected def fromHttpResponse(wsResponse: HttpResponse): FacebookBatchResponse = {
+    FacebookBatchResponse(wsResponse.status, wsResponse.headers, wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty))
   }
 }

@@ -1,8 +1,7 @@
 package http.client.request
 
 import http.client.connection.HttpConnection
-import http.client.response.{ BatchResponse, BatchResponsePart }
-import play.api.libs.ws.WSResponse
+import http.client.response.{ HttpResponse, BatchResponse, BatchResponsePart }
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
@@ -10,7 +9,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 abstract class HttpBatchRequestBuilder(var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
 
   protected def makeParts(requests: Seq[Request]): Seq[(String, Array[Byte])]
-  protected def fromWSResponse(wsResponse: WSResponse): BatchResponse
+  protected def fromHttpResponse(response: HttpResponse): BatchResponse
   protected def maybePaginated(paginated: Boolean, request: Request): Request
   protected def accumulateCompleteRequest(reqRes: (Request, BatchResponsePart)): (Request, BatchResponsePart)
   protected def newRequestFromIncompleteRequest(reqRes: (Request, BatchResponsePart)): Request
@@ -35,7 +34,7 @@ abstract class HttpBatchRequestBuilder(var requests: ListBuffer[Request] = ListB
       // assemble request parts and send it off
       .batch(BatchRequest(batchUrl, makeParts(requests)))
       // map the response to our internal type
-      .map(fromWSResponse)
+      .map(fromHttpResponse)
 
     postExecute()
     f
@@ -76,7 +75,7 @@ abstract class HttpBatchRequestBuilder(var requests: ListBuffer[Request] = ListB
 
     connection.batch(BatchRequest(batchUrl, parts)).map { rawResponse ⇒
 
-      val response = fromWSResponse(rawResponse)
+      val response = fromHttpResponse(rawResponse)
 
       val responses = requests
         // group up each request with it's corresponding response
