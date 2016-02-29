@@ -44,21 +44,24 @@ initialCommands in console :=
     | import facebook4s.api._
     | import facebook4s.api.FacebookMarketingApi._
     | import facebook4s.api.FacebookGraphApi._
+    |
+    | import http.client.connection.impl._
+    |
     | import com.typesafe.config.ConfigFactory
     |
     | val config = ConfigFactory.load()
+    |
     | val accessTokenStr = config.getString("facebook4s.console.access-token")
+    | val accessToken = AccessToken(accessTokenStr, 0L)
+    | val accessTokenOpt = Some(accessToken)
     |
-    | implicit val a = AccessToken(accessTokenStr, 0L)
-    | implicit val sa = Some(a)
-    | implicit val cfg = new FacebookConnectionInformation
-    | implicit val conn = new FacebookConnection
+    | lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation()
+    | lazy val requestBuilder = new FacebookBatchRequestBuilder(cfg, new PlayWSHttpConnection, accessTokenOpt)
     |
-    | val requestBuilder = FacebookRequestBuilder()
     |""".stripMargin
 
 cleanupCommands in console :=
   s"""
-     | conn.shutdown()
+     | requestBuilder.shutdown()
    """.stripMargin
 
