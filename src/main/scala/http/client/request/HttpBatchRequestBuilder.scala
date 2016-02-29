@@ -6,10 +6,10 @@ import http.client.response.{ HttpResponse, BatchResponse, BatchResponsePart }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
 
-abstract class HttpBatchRequestBuilder(var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
+abstract class HttpBatchRequestBuilder[R <: BatchResponse, B <: HttpBatchRequestBuilder[R, B]](var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
 
   protected def makeParts(requests: Seq[Request]): Seq[(String, Array[Byte])]
-  protected def fromHttpResponse(response: HttpResponse): BatchResponse
+  protected def fromHttpResponse(response: HttpResponse): R
   protected def maybePaginated(paginated: Boolean, request: Request): Request
   protected def accumulateCompleteRequest(reqRes: (Request, BatchResponsePart)): (Request, BatchResponsePart)
   protected def newRequestFromIncompleteRequest(reqRes: (Request, BatchResponsePart)): Request
@@ -17,19 +17,19 @@ abstract class HttpBatchRequestBuilder(var requests: ListBuffer[Request] = ListB
 
   def shutdown() = connection.shutdown()
 
-  def get(getRequest: GetRequest, since: Option[Long], until: Option[Long]): HttpBatchRequestBuilder =
+  def get(getRequest: GetRequest, since: Option[Long], until: Option[Long]): Unit =
     batch(maybeRanged(since, until, getRequest))
 
-  def get(getRequest: GetRequest, paginate: Boolean): HttpBatchRequestBuilder =
+  def get(getRequest: GetRequest, paginate: Boolean): Unit =
     batch(maybePaginated(paginate, getRequest))
 
-  def post[T](postRequest: PostRequest[T], since: Option[Long], until: Option[Long]): HttpBatchRequestBuilder =
+  def post[T](postRequest: PostRequest[T], since: Option[Long], until: Option[Long]): Unit =
     batch(maybeRanged(since, until, postRequest))
 
-  def post[T](postRequest: PostRequest[T], paginated: Boolean): HttpBatchRequestBuilder =
+  def post[T](postRequest: PostRequest[T], paginated: Boolean): Unit =
     batch(maybePaginated(paginated, postRequest))
 
-  def execute(implicit ec: ExecutionContext): Future[BatchResponse] = {
+  def execute(implicit ec: ExecutionContext): Future[R] = {
     val f = connection
       // assemble request parts and send it off
       .batch(BatchRequest(batchUrl, makeParts(requests)))
@@ -110,9 +110,8 @@ abstract class HttpBatchRequestBuilder(var requests: ListBuffer[Request] = ListB
     }
   }
 
-  private def batch(request: Request) = {
+  private def batch(request: Request): Unit = {
     requests += request
-    this
   }
 }
 

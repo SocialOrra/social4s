@@ -25,7 +25,7 @@ object FacebookBatchRequestBuilder {
 import FacebookBatchRequestBuilder._
 
 class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection: HttpConnection, accessToken: Option[AccessToken], requests: ListBuffer[Request] = ListBuffer.empty)
-    extends HttpBatchRequestBuilder(requests, connection, http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH)) {
+    extends HttpBatchRequestBuilder[FacebookBatchResponse, FacebookBatchRequestBuilder](requests, connection, http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH)) {
 
   override protected def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request =
     if (since.isDefined && until.isDefined) FacebookTimeRangedRequest(since.get, until.get, request)
@@ -50,7 +50,7 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
       Seq(BATCH -> ("[" + requests.map(_.toJson()).mkString(",") + "]").getBytes("utf-8"))
   }
 
-  override protected def fromHttpResponse(wsResponse: HttpResponse): BatchResponse = {
+  override protected def fromHttpResponse(wsResponse: HttpResponse): FacebookBatchResponse = {
     FacebookBatchResponse(wsResponse.status, wsResponse.headers, wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty))
   }
 }
