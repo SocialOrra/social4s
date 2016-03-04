@@ -90,12 +90,12 @@ object FacebookRequest {
   }
 }
 
-case class FacebookGetRequest(val relativeUrl: String, val queryString: Map[String, Seq[String]], val data: Option[AccessToken], val method: HttpMethod = GetMethod)
+case class FacebookGetRequest(val relativeUrl: String, val queryString: Map[String, Seq[String]], val accessToken: Option[AccessToken], val method: HttpMethod = GetMethod)
     extends GetRequest(relativeUrl, queryString, method) {
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
-      "relative_url" -> JsString(relativeUrl + FacebookRequest.maybeQueryString(queryString ++ extraQueryStringParams, data)))).toString()
+      "relative_url" -> JsString(relativeUrl + FacebookRequest.maybeQueryString(queryString ++ extraQueryStringParams, accessToken)))).toString()
   }
 }
 

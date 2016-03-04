@@ -25,7 +25,7 @@ object FacebookBatchRequestBuilder {
 import FacebookBatchRequestBuilder._
 
 class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection: HttpConnection, accessToken: Option[AccessToken], requests: ListBuffer[Request] = ListBuffer.empty)
-    extends HttpBatchRequestBuilder[FacebookBatchResponse, FacebookBatchRequestBuilder](requests, connection, http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH)) {
+    extends HttpBatchRequestBuilder[FacebookBatchResponse, FacebookBatchResponsePart, FacebookBatchRequestBuilder](requests, connection, http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH)) {
 
   override protected def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request =
     if (since.isDefined && until.isDefined) FacebookTimeRangedRequest(since.get, until.get, request)
@@ -35,12 +35,12 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
     if (paginated) FacebookCursorPaginatedRequest(request)
     else request
 
-  override protected def accumulateCompleteRequest(reqRes: (Request, BatchResponsePart)): (Request, BatchResponsePart) = reqRes match {
+  override protected def accumulateCompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): (Request, FacebookBatchResponsePart) = reqRes match {
     case (req: FacebookPaginatedRequest, res) ⇒ (req.originalRequest, res) // original request so we can group all parts on it later
     case rr                                   ⇒ rr
   }
 
-  override protected def newRequestFromIncompleteRequest(reqRes: (Request, BatchResponsePart)): Request = {
+  override protected def newRequestFromIncompleteRequest(reqRes: (Request, FacebookBatchResponsePart)): Request = {
     reqRes._1.asInstanceOf[FacebookPaginatedRequest].nextRequest(reqRes._2)
   }
 

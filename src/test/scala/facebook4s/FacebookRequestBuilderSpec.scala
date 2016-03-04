@@ -1,10 +1,14 @@
 package facebook4s
 
 import facebook4s.api.{ FacebookMarketingApi, AccessToken }
+
 import facebook4s.connection.FacebookConnectionInformation
 import facebook4s.request.{ FacebookGetRequest, FacebookBatchRequestBuilder }
 import facebook4s.response.FacebookTimePaging
+import FacebookMarketingApi._
+
 import http.client.connection.impl.PlayWSHttpConnection
+
 import play.api.GlobalSettings
 import play.api.libs.json.{ JsArray, Json }
 import play.api.test._
@@ -105,6 +109,16 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
     }
   }
 
+  val cfg: FacebookConnectionInformation = FacebookConnectionInformation(
+    graphApiHost = s"localhost:$port",
+    protocol = "http")
+
+  val requests = Seq(
+    ("123", Some(0L), Some(100L)),
+    ("456", Some(200L), Some(600L)),
+    ("789", Some(300L), Some(400L)),
+    ("101", Some(10L), Some(900L)))
+
   implicit override lazy val app: FakeApplication =
     FakeApplication(
       withGlobal = Some(new GlobalSettings() {
@@ -130,19 +144,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
     assert((response.parts.head.bodyJson \ "name").validate[String].get == profileName)
   }
 
-  "Paginate requests" in {
-
-    import FacebookMarketingApi._
-
-    implicit lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation(
-      graphApiHost = s"localhost:$port",
-      protocol = "http")
-
-    val requests = Seq(
-      ("123", Some(0L), Some(100L)),
-      ("456", Some(200L), Some(600L)),
-      ("789", Some(300L), Some(400L)),
-      ("101", Some(10L), Some(900L)))
+  "Paginate time based requests" in {
 
     val requestBuilder = new FacebookBatchRequestBuilder(cfg, new PlayWSHttpConnection, accessTokenOpt)
     requests.foreach { r ⇒ requestBuilder.adInsights(r._1, since = r._2, until = r._3) }
@@ -178,6 +180,13 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
         assert(lastValue.get >= reqSinceUntil._2.get)
       }
 
+    requestBuilder.shutdown()
+  }
+
+  "Paginate cursor based requests" in {
+
+    val requestBuilder = new FacebookBatchRequestBuilder(cfg, new PlayWSHttpConnection, accessTokenOpt)
+    requests.foreach { r ⇒ requestBuilder.adInsights(r._1, since = r._2, until = r._3) }
     val future2 = requestBuilder.executeWithPagination
     val response2 = Await.result(future2, 10.seconds)
     response2 foreach { reqRes ⇒
