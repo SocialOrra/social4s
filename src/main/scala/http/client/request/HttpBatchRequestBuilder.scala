@@ -6,30 +6,36 @@ import http.client.response.{ HttpResponse, BatchResponse, BatchResponsePart }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
 
-abstract class HttpBatchRequestBuilder[R <: BatchResponse[P], P <: BatchResponsePart, B <: HttpBatchRequestBuilder[R, P, B]](var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
+abstract class HttpBatchRequestBuilder[
+  GRequest <: GetRequest,
+  PRequest <: PostRequest[_],
+  BResponse <: BatchResponse[BResponsePart],
+  BResponsePart <: BatchResponsePart,
+  BRequestBuilder <: HttpBatchRequestBuilder[GRequest, PRequest, BResponse, BResponsePart, BRequestBuilder]]
+  (var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
 
   protected def makeParts(requests: Seq[Request]): Seq[(String, Array[Byte])]
-  protected def fromHttpResponse(response: HttpResponse): R
+  protected def fromHttpResponse(response: HttpResponse): BResponse
   protected def maybePaginated(paginated: Boolean, request: Request): Request
-  protected def accumulateCompleteRequest(reqRes: (Request, P)): (Request, P)
-  protected def newRequestFromIncompleteRequest(reqRes: (Request, P)): Request
+  protected def accumulateCompleteRequest(reqRes: (Request, BResponsePart)): (Request, BResponsePart)
+  protected def newRequestFromIncompleteRequest(reqRes: (Request, BResponsePart)): Request
   protected def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request
 
   def shutdown() = connection.shutdown()
 
-  def get(getRequest: GetRequest, since: Option[Long], until: Option[Long]): Unit =
+  def get(getRequest: GRequest, since: Option[Long], until: Option[Long]): Unit =
     batch(maybeRanged(since, until, getRequest))
 
-  def get(getRequest: GetRequest, paginate: Boolean): Unit =
+  def get(getRequest: GRequest, paginate: Boolean): Unit =
     batch(maybePaginated(paginate, getRequest))
 
-  def post[T](postRequest: PostRequest[T], since: Option[Long], until: Option[Long]): Unit =
+  def post[T](postRequest: PRequest, since: Option[Long], until: Option[Long]): Unit =
     batch(maybeRanged(since, until, postRequest))
 
-  def post[T](postRequest: PostRequest[T], paginated: Boolean): Unit =
+  def post[T](postRequest: PRequest, paginated: Boolean): Unit =
     batch(maybePaginated(paginated, postRequest))
 
-  def execute(implicit ec: ExecutionContext): Future[R] = {
+  def execute(implicit ec: ExecutionContext): Future[BResponse] = {
     val f = connection
       // assemble request parts and send it off
       .batch(BatchRequest(batchUrl, makeParts(requests)))
@@ -40,16 +46,18 @@ abstract class HttpBatchRequestBuilder[R <: BatchResponse[P], P <: BatchResponse
     f
   }
 
-  def executeWithPaginationWithoutMerging(implicit ec: ExecutionContext): Future[Seq[(Request, P)]] = {
+  def executeWithPaginationWithoutMerging(implicit ec: ExecutionContext): Future[Seq[(Request, BResponsePart)]] = {
     val f = _executeWithPagination(requests)
     postExecute()
     f
   }
 
-  def executeWithPagination(implicit ec: ExecutionContext): Future[Map[Request, Seq[P]]] = {
+  def executeWithPagination(implicit ec: ExecutionContext): Future[Map[Request, Seq[BResponsePart]]] = {
     val f = _executeWithPagination(requests) map { requestsAndResponses ⇒
       requestsAndResponses
+        // group response parts by request
         .groupBy(_._1)
+        // remove grouping key, leave (request,responseParts)
         .mapValues(_.map(_._2))
         .map { requestAndResponseParts ⇒
           // TODO: could there be no parts?
@@ -69,7 +77,7 @@ abstract class HttpBatchRequestBuilder[R <: BatchResponse[P], P <: BatchResponse
     requests = ListBuffer.empty
   }
 
-  private def _executeWithPagination(requests: Seq[Request], completedRequests: Seq[(Request, P)] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[(Request, P)]] = {
+  private def _executeWithPagination(requests: Seq[Request], completedRequests: Seq[(Request, BResponsePart)] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[(Request, BResponsePart)]] = {
 
     val parts = makeParts(requests)
 
@@ -98,7 +106,7 @@ abstract class HttpBatchRequestBuilder[R <: BatchResponse[P], P <: BatchResponse
     }
   }
 
-  private def isRequestComplete(reqRes: (Request, P)): Boolean = {
+  private def isRequestComplete(reqRes: (Request, BResponsePart)): Boolean = {
     val request = reqRes._1
     val response = reqRes._2
 
