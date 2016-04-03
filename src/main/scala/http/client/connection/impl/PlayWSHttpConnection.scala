@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import com.ning.http.client.FluentCaseInsensitiveStringsMap
 import com.ning.http.client.multipart.{ ByteArrayPart, MultipartUtils }
 import http.client.connection.HttpConnection
-import http.client.request.{ BatchRequest, PostRequest, GetRequest }
+import http.client.request.{ BatchRequest, GetRequest, PostRequest }
 import http.client.response.HttpResponse
 import play.api.http.Writeable
 import play.api.libs.ws.WSResponse
@@ -81,3 +81,4 @@ class PlayWSHttpConnection extends HttpConnection {
       .map(PlayWsHttpResponse.apply)
   }
 }
+

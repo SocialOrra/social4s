@@ -1,14 +1,12 @@
 package facebook4s
 
-import facebook4s.api.{ FacebookMarketingApi, AccessToken }
-
+import akka.actor.ActorSystem
+import facebook4s.api.AccessToken
+import facebook4s.api.FacebookMarketingApi._
 import facebook4s.connection.FacebookConnectionInformation
-import facebook4s.request.{ FacebookGetRequest, FacebookBatchRequestBuilder }
+import facebook4s.request.{ FacebookBatchRequestBuilder, FacebookGetRequest }
 import facebook4s.response.FacebookTimePaging
-import FacebookMarketingApi._
-
-import http.client.connection.impl.PlayWSHttpConnection
-
+import http.client.connection.impl.{ PlayWSHttpConnection, ThrottledHttpConnection }
 import play.api.GlobalSettings
 import play.api.libs.json.{ JsArray, Json }
 import play.api.test._
@@ -19,10 +17,8 @@ import play.api.mvc.Results._
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
-
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-
 import org.scalatestplus.play._
 
 import scala.concurrent.duration._
@@ -132,21 +128,32 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
   "Successfully use the Facebook Graph API" in {
     lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation()
-    val requestBuilder = new FacebookBatchRequestBuilder(cfg, new PlayWSHttpConnection, accessTokenOpt)
+    val connection = new ThrottledHttpConnection {
+      override val actorSystem = ActorSystem("facebook4s-test")
+      override val connection = new PlayWSHttpConnection
+    }
+    val requestBuilder = new FacebookBatchRequestBuilder(cfg, connection, accessTokenOpt)
 
-    requestBuilder.get(FacebookGetRequest("me", Map.empty, None), since = None, until = None)
-    val future = requestBuilder.execute
-    val response = Await.result(future, 5.seconds)
-
-    requestBuilder.shutdown()
-
-    assert(response.parts.size == 1)
-    assert((response.parts.head.bodyJson \ "name").validate[String].get == profileName)
+    try {
+      requestBuilder.get(FacebookGetRequest("me", Map.empty, None), since = None, until = None)
+      val future = requestBuilder.execute
+      println("Waiting on requestBuilder's future...")
+      val response = Await.result(future, 5.seconds)
+      assert(response.parts.size == 1)
+      assert((response.parts.head.bodyJson \ "name").validate[String].get == profileName)
+    } finally {
+      requestBuilder.shutdown()
+    }
   }
 
   "Paginate time based requests" in {
 
-    val requestBuilder = new FacebookBatchRequestBuilder(cfg, new PlayWSHttpConnection, accessTokenOpt)
+    val connection = new ThrottledHttpConnection {
+      val actorSystem = ActorSystem("facebook4s-test")
+      val connection = new PlayWSHttpConnection
+    }
+
+    val requestBuilder = new FacebookBatchRequestBuilder(cfg, connection, accessTokenOpt)
     requests.foreach { r ⇒ requestBuilder.adInsights(r._1, since = r._2, until = r._3) }
     val future = requestBuilder.executeWithPaginationWithoutMerging
     val response = Await.result(future, 10.seconds)

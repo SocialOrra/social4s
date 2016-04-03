@@ -33,32 +33,39 @@ lazy val f4s = (project in file(".")).
 
 initialCommands in console :=
   s"""
-    | import scala.concurrent.duration._
-    | import scala.concurrent.Await
-    | import scala.concurrent.ExecutionContext.Implicits._
-    |
-    | import facebook4s._
-    | import facebook4s.request._
-    | import facebook4s.response._
-    | import facebook4s.connection._
-    | import facebook4s.api._
-    | import facebook4s.api.FacebookMarketingApi._
-    | import facebook4s.api.FacebookGraphApi._
-    |
-    | import http.client.connection.impl._
-    |
-    | import com.typesafe.config.ConfigFactory
-    |
-    | val config = ConfigFactory.load()
-    |
-    | val accessTokenStr = config.getString("facebook4s.console.access-token")
-    | val accessToken = AccessToken(accessTokenStr, 0L)
-    | val accessTokenOpt = Some(accessToken)
-    |
-    | lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation()
-    | lazy val requestBuilder = new FacebookBatchRequestBuilder(cfg, new PlayWSHttpConnection, accessTokenOpt)
-    |
-    |""".stripMargin
+     | import akka.actor.ActorSystem
+     |
+     | import facebook4s.api.{ AccessToken, FacebookMarketingApi }
+     | import facebook4s.connection.FacebookConnectionInformation
+     | import facebook4s.request.{ FacebookBatchRequestBuilder, FacebookGetRequest }
+     | import facebook4s.response.FacebookTimePaging
+     | import facebook4s.api.FacebookMarketingApi._
+     | import facebook4s.api.FacebookGraphApi._
+     |
+     | import http.client.connection.impl.{ PlayWSHttpConnection, ThrottledHttpConnection }
+     |
+     | import play.api.libs.json.{ JsArray, Json }
+     |
+     | import scala.concurrent.Future
+     | import scala.concurrent.duration._
+     | import scala.concurrent.Await
+     | import scala.concurrent.ExecutionContext.Implicits.global
+     |
+     | import com.typesafe.config.ConfigFactory
+     |
+     | val config = ConfigFactory.load()
+     | val accessTokenStr = config.getString("facebook4s.console.access-token")
+     | val accessTokenOpt = Some(AccessToken(accessTokenStr, 0L))
+     |
+     | lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation()
+     |
+     | val connection = new ThrottledHttpConnection {
+     |   override val actorSystem = ActorSystem("facebook4s-console")
+     |   override val connection = new PlayWSHttpConnection
+     | }
+     |
+     | val requestBuilder = new FacebookBatchRequestBuilder(cfg, connection, accessTokenOpt)
+     |""".stripMargin
 
 cleanupCommands in console :=
   s"""
