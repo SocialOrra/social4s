@@ -1,6 +1,7 @@
 import sbt._
 
 object Dependencies {
+  val bucket4j       = "com.github" % "bucket4j" % "1.0.1"
   val logback        = "ch.qos.logback" % "logback-classic" % "1.1.1"
   val play           = "com.typesafe.play" %% "play" % "2.4.6" % "provided"
   val playJson       = "com.typesafe.play" %% "play-json" % "2.4.6"

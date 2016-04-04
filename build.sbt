@@ -14,11 +14,12 @@ lazy val commonSettings = Seq(
 )
 
 lazy val f4sDeps = Seq(
-  typesafeConfig,
+  bucket4j,
   playJson,
   playWs,
   scalaTest,
-  scalaTestPlus
+  scalaTestPlus,
+  typesafeConfig
 )
 
 lazy val f4s = (project in file(".")).
