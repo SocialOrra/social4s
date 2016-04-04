@@ -45,7 +45,6 @@ trait ThrottledHttpConnection extends HttpConnection {
     }
   }
 
-  // TODO: shut down actor
   override def shutdown(): Unit = {
     implicit val timeout = new Timeout(shutdownTimeoutDuration)
     val f = actor ask Shutdown
