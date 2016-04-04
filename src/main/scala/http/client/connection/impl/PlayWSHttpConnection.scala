@@ -21,10 +21,6 @@ private[impl] object PlayWsHttpResponse {
   def apply(wsReponse: WSResponse): PlayWsHttpResponse = PlayWsHttpResponse(wsReponse.status, wsReponse.allHeaders, wsReponse)
 }
 
-trait RequestsPerSecond extends HttpConnection {
-
-}
-
 class PlayWSHttpConnection extends HttpConnection {
 
   val GET = "GET"
