@@ -8,6 +8,7 @@ import akka.pattern.ask
 import akka.actor.{ Actor, ActorLogging, ActorSystem, Props }
 import akka.util.Timeout
 import com.github.bucket4j.Buckets
+import com.typesafe.config.ConfigFactory
 import http.client.connection.HttpConnection
 import http.client.request.{ BatchRequest, GetRequest, PostRequest }
 import http.client.response.HttpResponse
@@ -17,7 +18,12 @@ trait ThrottledHttpConnection extends HttpConnection {
 
   protected val actorSystem: ActorSystem
   protected val connection: HttpConnection
-  protected val actorProps = Props(classOf[ThrottlingActor])
+
+  protected val config = ConfigFactory.load()
+  protected val numberOfRequests: scala.Long = config.getLong("http.client.connection.throttled.number-of-requests")
+  protected val periodInSeconds: scala.Long = config.getLong("http.client.connection.throttled.period-in-seconds")
+
+  protected val actorProps = Props(classOf[ThrottlingActor], numberOfRequests, TimeUnit.SECONDS, periodInSeconds)
   lazy protected val actor = actorSystem.actorOf(actorProps, "throttling-actor")
 
   // TODO: make configurable
@@ -55,11 +61,11 @@ trait ThrottledHttpConnection extends HttpConnection {
 case object Throttled
 case object Shutdown
 
-class ThrottlingActor extends Actor with ActorLogging {
+class ThrottlingActor(numRequests: Long, timeUnit: TimeUnit, period: Long) extends Actor with ActorLogging {
 
   // TODO: make this configurable
   protected val bucket = Buckets.withNanoTimePrecision()
-    .withLimitedBandwidth(80, TimeUnit.MINUTES, 1)
+    .withLimitedBandwidth(numRequests, timeUnit, period)
     .build()
 
   def receive = {

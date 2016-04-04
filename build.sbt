@@ -13,7 +13,7 @@ lazy val commonSettings = Seq(
     "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/")
 )
 
-lazy val f4sDeps = Seq(
+lazy val httpClientDeps = Seq(
   bucket4j,
   playJson,
   playWs,
@@ -22,7 +22,30 @@ lazy val f4sDeps = Seq(
   typesafeConfig
 )
 
-lazy val f4s = (project in file(".")).
+lazy val f4sDeps = Seq(
+  playJson,
+  playWs,
+  scalaTest,
+  scalaTestPlus,
+  typesafeConfig
+)
+
+lazy val root = (project in file(".")).
+  settings(commonSettings: _*).
+  settings(name := "social4s").
+  aggregate(httpClient, f4s)
+
+lazy val httpClient = (project in file("http-client")).
+  settings(commonSettings: _*).
+  settings(
+    name := "http-client",
+    publishArtifact in Test := false,
+    parallelExecution in Test := false,
+    fork in run := false,
+    libraryDependencies ++= httpClientDeps).
+  settings(Format.settings) 
+
+lazy val f4s = (project in file("facebook4s")).
   settings(commonSettings: _*).
   settings(
     name := "facebook4s",
@@ -30,7 +53,7 @@ lazy val f4s = (project in file(".")).
     parallelExecution in Test := false,
     fork in run := false,
     libraryDependencies ++= f4sDeps).
-  settings(Format.settings) 
+  settings(Format.settings) dependsOn httpClient
 
 initialCommands in console :=
   s"""
