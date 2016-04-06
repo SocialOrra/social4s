@@ -68,6 +68,7 @@ class ThrottlingActor(numRequests: Long, timeUnit: TimeUnit, period: Long) exten
     .withLimitedBandwidth(numRequests, timeUnit, period)
     .build()
 
+  // TODO: make rate limiting pluggable, perhaps based on rules (ex: twitter per advertiser rate limiting)
   def receive = {
     case Throttled ⇒
       log.debug("Being asked to check if throttled.")
