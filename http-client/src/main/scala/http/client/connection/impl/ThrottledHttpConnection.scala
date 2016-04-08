@@ -10,7 +10,7 @@ import akka.util.Timeout
 import com.github.bucket4j.Buckets
 import com.typesafe.config.ConfigFactory
 import http.client.connection.HttpConnection
-import http.client.request.{ BatchRequest, GetRequest, PostRequest, Request }
+import http.client.request.{ GetRequest, PostRequest, Request }
 import http.client.response.HttpResponse
 import play.api.http.Writeable
 

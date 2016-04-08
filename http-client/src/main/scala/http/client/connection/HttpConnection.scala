@@ -1,6 +1,6 @@
 package http.client.connection
 
-import http.client.request.{ BatchRequest, PostRequest, GetRequest }
+import http.client.request.{ PostRequest, GetRequest }
 import http.client.response.HttpResponse
 import play.api.http.Writeable
 
