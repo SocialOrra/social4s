@@ -5,6 +5,7 @@ import http.client.response.BatchResponsePart
 
 trait Request {
   val method: HttpMethod
+  val headers: Seq[(String, String)]
   val relativeUrl: String
   val queryString: Map[String, Seq[String]]
   val completionEvaluator: CompletionEvaluation

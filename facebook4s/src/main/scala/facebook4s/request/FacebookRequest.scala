@@ -90,8 +90,8 @@ object FacebookRequest {
   }
 }
 
-case class FacebookGetRequest(val relativeUrl: String, val queryString: Map[String, Seq[String]], val accessToken: Option[AccessToken], val method: HttpMethod = GetMethod)
-    extends GetRequest(relativeUrl, queryString, method) {
+case class FacebookGetRequest(relativeUrl: String, headers: Seq[(String, String)], queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], method: HttpMethod = GetMethod)
+    extends GetRequest(relativeUrl, headers, queryString, method) {
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
@@ -99,8 +99,8 @@ case class FacebookGetRequest(val relativeUrl: String, val queryString: Map[Stri
   }
 }
 
-case class FacebookPostRequest(relativeUrl: String, queryString: Map[String, Seq[String]], data: Option[AccessToken], override val body: Option[String], method: HttpMethod = PostMethod)
-    extends PostRequest[String](relativeUrl, queryString, body, method) {
+case class FacebookPostRequest(override val relativeUrl: String, override val headers: Seq[(String, String)], override val queryString: Map[String, Seq[String]], data: Option[AccessToken], override val body: Option[String], override val method: HttpMethod = PostMethod)
+    extends PostRequest[String](relativeUrl, headers, queryString, body, method) {
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" -> JsString(method.name),
@@ -119,6 +119,7 @@ case class FacebookTimeRangedRequest(since: Long, until: Long, request: Request,
     extends FacebookPaginatedRequest {
   protected lazy val sinceUntil = Map("since" -> Seq(currentSince.getOrElse(since).toString), "until" -> Seq(currentUntil.getOrElse(until).toString))
   override val method = request.method
+  override val headers = request.headers
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ sinceUntil
   //override val data = request.data
@@ -135,6 +136,7 @@ case class FacebookCursorPaginatedRequest(request: Request, paging: Option[Faceb
     extends FacebookPaginatedRequest {
   protected lazy val after = paging.map(p ⇒ Map("after" -> Seq(p.cursors.after))).getOrElse(Map.empty)
   override val method = request.method
+  override val headers = request.headers
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ after
   //override val data = request.data

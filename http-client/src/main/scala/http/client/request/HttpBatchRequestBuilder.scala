@@ -1,10 +1,11 @@
 package http.client.request
 
 import http.client.connection.HttpConnection
-import http.client.response.{ HttpResponse, BatchResponse, BatchResponsePart }
+import http.client.method.HttpMethod
+import http.client.response.{BatchResponse, BatchResponsePart, HttpResponse}
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 abstract class HttpBatchRequestBuilder[
   GRequest <: GetRequest,
@@ -14,7 +15,8 @@ abstract class HttpBatchRequestBuilder[
   BRequestBuilder <: HttpBatchRequestBuilder[GRequest, PRequest, BResponse, BResponsePart, BRequestBuilder]]
   (var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
 
-  protected def makeParts(requests: Seq[Request]): Seq[(String, Array[Byte])]
+  protected def makeBatchRequestBody(requests: Seq[Request]): Array[Byte]
+  protected def makeBatchRequest(batchUrl: String, body: Array[Byte]): PostRequest[Array[Byte]]
   protected def fromHttpResponse(response: HttpResponse): BResponse
   protected def maybePaginated(paginated: Boolean, request: Request): Request
   protected def accumulateCompleteRequest(reqRes: (Request, BResponsePart)): (Request, BResponsePart)
@@ -36,9 +38,11 @@ abstract class HttpBatchRequestBuilder[
     batch(maybePaginated(paginated, postRequest))
 
   def execute(implicit ec: ExecutionContext): Future[BResponse] = {
-    val f = connection
-      // assemble request parts and send it off
-      .batch(BatchRequest(batchUrl, makeParts(requests)))
+    // assemble request parts
+    val body = makeBatchRequestBody(requests)
+    val postRequest = makeBatchRequest(batchUrl, body)
+    // and send it off
+    val f = connection.post(postRequest)
       // map the response to our internal type
       .map(fromHttpResponse)
 
@@ -79,9 +83,10 @@ abstract class HttpBatchRequestBuilder[
 
   private def _executeWithPagination(requests: Seq[Request], completedRequests: Seq[(Request, BResponsePart)] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[(Request, BResponsePart)]] = {
 
-    val parts = makeParts(requests)
+    val body = makeBatchRequestBody(requests)
+    val postRequest = makeBatchRequest(batchUrl, body)
 
-    connection.batch(BatchRequest(batchUrl, parts)).map { rawResponse ⇒
+    connection.post(postRequest).map { rawResponse =>
 
       val response = fromHttpResponse(rawResponse)
 

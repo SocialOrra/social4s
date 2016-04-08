@@ -135,7 +135,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
     val requestBuilder = new FacebookBatchRequestBuilder(cfg, connection, accessTokenOpt)
 
     try {
-      requestBuilder.get(FacebookGetRequest("me", Map.empty, None), since = None, until = None)
+      requestBuilder.get(FacebookGetRequest("me", Seq.empty, Map.empty, None), since = None, until = None)
       val future = requestBuilder.execute
       println("Waiting on requestBuilder's future...")
       val response = Await.result(future, 5.seconds)

@@ -10,7 +10,7 @@ import akka.util.Timeout
 import com.github.bucket4j.Buckets
 import com.typesafe.config.ConfigFactory
 import http.client.connection.HttpConnection
-import http.client.request.{ BatchRequest, GetRequest, PostRequest }
+import http.client.request.{ BatchRequest, GetRequest, PostRequest, Request }
 import http.client.response.HttpResponse
 import play.api.http.Writeable
 
@@ -32,22 +32,15 @@ trait ThrottledHttpConnection extends HttpConnection {
 
   override def get(getRequest: GetRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     implicit val timeout = new Timeout(requestTimeoutDuration)
-    actor ask Throttled flatMap { _ ⇒
+    actor ask Throttled(getRequest) flatMap { _ ⇒
       connection.get(getRequest)
     }
   }
 
   override def post[T](postRequest: PostRequest[T])(implicit ec: ExecutionContext, writeable: Writeable[T]): Future[HttpResponse] = {
     implicit val timeout = new Timeout(requestTimeoutDuration)
-    actor ask Throttled flatMap { _ ⇒
+    actor ask Throttled(postRequest) flatMap { _ ⇒
       connection.post(postRequest)
-    }
-  }
-
-  override def batch(batchRequest: BatchRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
-    implicit val timeout = new Timeout(requestTimeoutDuration)
-    actor ask Throttled flatMap { _ ⇒
-      connection.batch(batchRequest)
     }
   }
 
@@ -58,23 +51,22 @@ trait ThrottledHttpConnection extends HttpConnection {
     connection.shutdown()
   }
 }
-case object Throttled
+case class Throttled(request: Request)
 case object Shutdown
 
 class ThrottlingActor(numRequests: Long, timeUnit: TimeUnit, period: Long) extends Actor with ActorLogging {
 
-  // TODO: make this configurable
   protected val bucket = Buckets.withNanoTimePrecision()
     .withLimitedBandwidth(numRequests, timeUnit, period)
     .build()
 
   // TODO: make rate limiting pluggable, perhaps based on rules (ex: twitter per advertiser rate limiting)
   def receive = {
-    case Throttled ⇒
+    case t @ Throttled(request) ⇒
       log.debug("Being asked to check if throttled.")
       bucket.consume(1)
       log.debug("Throttling completed.")
-      sender ! Throttled
+      sender ! t
     case Shutdown ⇒
       log.info(s"Shutting down ${getClass.getName}")
       sender ! Shutdown
