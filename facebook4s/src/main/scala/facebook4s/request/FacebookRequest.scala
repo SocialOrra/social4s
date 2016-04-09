@@ -62,8 +62,6 @@ class JsonConditionCompletionEvaluation[T](jsonExtractor: JsonExtractor[T], chec
     jsonExtractor.apply(response.bodyJson, checker).apply(completionConditionValue)
 }
 
-///// facebook api
-
 object FacebookEmptyNextPageCompletionEvaluation extends CompletionEvaluation {
   override def apply(request: Request, response: BatchResponsePart): Boolean = {
     val paging = (response.bodyJson \ "paging").validate[FacebookCursorPaging].get
@@ -122,7 +120,6 @@ case class FacebookTimeRangedRequest(since: Long, until: Long, request: Request,
   override val headers = request.headers
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ sinceUntil
-  //override val data = request.data
   override def originalRequest = copy(currentSince = None, currentUntil = None)
   override val completionEvaluator = TimeRangeCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ sinceUntil)
@@ -139,7 +136,6 @@ case class FacebookCursorPaginatedRequest(request: Request, paging: Option[Faceb
   override val headers = request.headers
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ after
-  //override val data = request.data
   override def originalRequest = copy(paging = None)
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ after)
   override def nextRequest(responsePart: BatchResponsePart): FacebookCursorPaginatedRequest = {
