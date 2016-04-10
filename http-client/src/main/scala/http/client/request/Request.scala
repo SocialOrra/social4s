@@ -1,7 +1,12 @@
 package http.client.request
 
-import http.client.method.HttpMethod
+import java.io.UnsupportedEncodingException
+import java.net.URLEncoder
+
+import http.client.method.{ HttpMethod, PostMethod }
 import http.client.response.BatchResponsePart
+
+import scala.compat.Platform
 
 trait Request {
   val method: HttpMethod
@@ -12,3 +17,4 @@ trait Request {
   def isComplete(response: BatchResponsePart): Boolean = completionEvaluator(this, response)
   def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String
 }
+

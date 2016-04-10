@@ -30,10 +30,18 @@ lazy val f4sDeps = Seq(
   typesafeConfig
 )
 
+lazy val t4sDeps = Seq(
+  playJson,
+  playWs,
+  scalaTest,
+  scalaTestPlus,
+  typesafeConfig
+)
+
 lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(name := "social4s").
-  aggregate(httpClient, f4s)
+  aggregate(httpClient, f4s, t4s)
 
 lazy val httpClient = (project in file("http-client")).
   settings(commonSettings: _*).
@@ -53,6 +61,16 @@ lazy val f4s = (project in file("facebook4s")).
     parallelExecution in Test := false,
     fork in run := false,
     libraryDependencies ++= f4sDeps).
+  settings(Format.settings) dependsOn httpClient
+
+lazy val t4s = (project in file("twitter4s")).
+  settings(commonSettings: _*).
+  settings(
+    name := "twitter4s",
+    publishArtifact in Test := false,
+    parallelExecution in Test := false,
+    fork in run := false,
+    libraryDependencies ++= t4sDeps).
   settings(Format.settings) dependsOn httpClient
 
 initialCommands in console :=
