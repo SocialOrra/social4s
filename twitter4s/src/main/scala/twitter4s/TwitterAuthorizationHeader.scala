@@ -14,8 +14,8 @@ import scala.compat.Platform
 object TwitterAuthorizationHeader {
 
   private val ENCODING = "UTF-8"
-  private val oauthSignatureMethod = "HMAC-SHA1"
-  private val oauthVersion = "1.0"
+  val oauthSignatureMethod = "HMAC-SHA1"
+  val oauthVersion = "1.0"
 
   /** Generates a Twitter Authorization header according to:
    *  https://dev.twitter.com/oauth/overview/authorizing-requests
@@ -56,7 +56,7 @@ object TwitterAuthorizationHeader {
       .sortBy(_._1)
       .map(kv ⇒ { percentEncode(kv._1).getOrElse(s"INVALID_KEY_${kv._1}") + "=\"" + percentEncode(kv._2).getOrElse(s"INVALID_VALUE_${kv._2}") + "\"" })
 
-    val oauthHeader = "Authorization" -> s"OAuth ${encodedFields.mkString(",")}"
+    val oauthHeader = "Authorization" -> s"OAuth ${encodedFields.mkString(", ")}"
 
     oauthHeader
   }
@@ -151,7 +151,7 @@ object TwitterAuthorizationHeader {
     val mac = Mac.getInstance(HMACSHA1)
     mac.init(signingKey)
     // NOTE: if we use utf-8 then the signature will not be compatible with Twitter
-    val rawHmac = mac.doFinal(toEncode.getBytes("ascii"))
+    val rawHmac = mac.doFinal(toEncode.getBytes("utf-8"))
     new String(Base64.encode(rawHmac))
   }
 

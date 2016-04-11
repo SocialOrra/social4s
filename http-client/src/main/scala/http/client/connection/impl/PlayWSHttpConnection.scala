@@ -5,11 +5,14 @@ import http.client.request.{ GetRequest, PostRequest }
 import http.client.response.HttpResponse
 import play.api.http.Writeable
 import play.api.libs.ws.WSResponse
-import play.api.libs.ws.ning.NingWSClient
+import play.api.libs.ws.ning.{ NingWSClient, NingWSRequest }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 private[impl] case class PlayWsHttpResponse(status: Int, headers: Map[String, Seq[String]], response: WSResponse) extends HttpResponse {
+  override def statusText = response.statusText
+  override def body = response.body
+  override def bodyAsBytes = response.bodyAsBytes
   override def json = response.json
 }
 
@@ -34,22 +37,34 @@ class PlayWSHttpConnection extends HttpConnection {
 
   override def get(getRequest: GetRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
 
-    client
+    val r = client
       .url(getRequest.relativeUrl)
       .withHeaders(getRequest.headers: _*)
       .withQueryString(queryStringToSeq(getRequest.queryString): _*)
       .withMethod(GET)
+
+    val n = r.asInstanceOf[NingWSRequest]
+    println("request headers = " + n.headers)
+    println("request body = " + n.getBody)
+
+    r
       .execute()
       .map(PlayWsHttpResponse.apply)
   }
 
   override def post[T](postRequest: PostRequest[T])(implicit ec: ExecutionContext, bodyWriteable: Writeable[T]): Future[HttpResponse] = {
-    client
+    val r = client
       .url(postRequest.relativeUrl)
       .withHeaders(postRequest.headers: _*)
       .withQueryString(queryStringToSeq(postRequest.queryString): _*)
       .withMethod(POST)
       .withBody[T](postRequest.body.getOrElse(null.asInstanceOf[T]))(bodyWriteable)
+
+    val n = r.asInstanceOf[NingWSRequest]
+    println("request headers = " + n.headers)
+    println("request body = " + new String(n.getBody.getOrElse(Array.empty)))
+
+    r
       .execute()
       .map(PlayWsHttpResponse.apply)
   }
