@@ -37,34 +37,22 @@ class PlayWSHttpConnection extends HttpConnection {
 
   override def get(getRequest: GetRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
 
-    val r = client
+    client
       .url(getRequest.relativeUrl)
       .withHeaders(getRequest.headers: _*)
       .withQueryString(queryStringToSeq(getRequest.queryString): _*)
       .withMethod(GET)
-
-    val n = r.asInstanceOf[NingWSRequest]
-    println("request headers = " + n.headers)
-    println("request body = " + n.getBody)
-
-    r
       .execute()
       .map(PlayWsHttpResponse.apply)
   }
 
   override def post[T](postRequest: PostRequest[T])(implicit ec: ExecutionContext, bodyWriteable: Writeable[T]): Future[HttpResponse] = {
-    val r = client
+    client
       .url(postRequest.relativeUrl)
       .withHeaders(postRequest.headers: _*)
       .withQueryString(queryStringToSeq(postRequest.queryString): _*)
       .withMethod(POST)
       .withBody[T](postRequest.body.getOrElse(null.asInstanceOf[T]))(bodyWriteable)
-
-    val n = r.asInstanceOf[NingWSRequest]
-    println("request headers = " + n.headers)
-    println("request body = " + new String(n.getBody.getOrElse(Array.empty)))
-
-    r
       .execute()
       .map(PlayWsHttpResponse.apply)
   }
