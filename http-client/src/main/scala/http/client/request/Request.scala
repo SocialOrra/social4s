@@ -1,12 +1,7 @@
 package http.client.request
 
-import java.io.UnsupportedEncodingException
-import java.net.URLEncoder
-
-import http.client.method.{ HttpMethod, PostMethod }
+import http.client.method.HttpMethod
 import http.client.response.BatchResponsePart
-
-import scala.compat.Platform
 
 trait Request {
   val method: HttpMethod
