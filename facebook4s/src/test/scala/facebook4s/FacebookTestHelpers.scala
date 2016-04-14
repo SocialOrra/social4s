@@ -58,17 +58,19 @@ object FacebookTestHelpers {
   def makeJsonResponse(numSuccess: Int, numErrors: Int) =
     "[" + makeJsonBody(numSuccess, numErrors).mkString(",") + "]"
 
-  val defaultHeaders = Map("Content-Type" -> Seq("text/javascript; charset=UTF-8"))
+  val defaultHeaders = Map("Content-Type" → Seq("text/javascript; charset=UTF-8"))
   val defaultPartHeaders = Seq(FacebookBatchResponsePartHeader("Content-Type", "text/javascript; charset=UTF-8"))
 
   def makeBatchResponsePartBodyData(name: String = "data-name", period: String = "day", value: JsArray): JsObject = Json.obj(
-    "name" -> name,
-    "period" -> period,
-    "values" -> value)
+    "name" → name,
+    "period" → period,
+    "values" → value
+  )
 
   def makeBatchResponsePartBody(data: Seq[JsObject], paging: FacebookTimePaging): JsObject = Json.obj(
-    "data" -> data,
-    "paging" -> Json.toJson(paging))
+    "data" → data,
+    "paging" → Json.toJson(paging)
+  )
 
   def makeBatchResponsePart(code: Int = 200, headers: Seq[FacebookBatchResponsePartHeader] = defaultPartHeaders, body: JsObject): FacebookBatchResponsePart = {
     FacebookBatchResponsePart(code, headers, body.toString)

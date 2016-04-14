@@ -1,32 +1,34 @@
 package twitter4s
 
 import http.client.method.PostMethod
-import http.client.request.PostRequest
+import http.client.request.{Request, TrueCompletionEvaluation}
 import org.scalatest._
 
 class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers with OptionValues with Inside with Inspectors {
 
-  val baseUrl = "https://api.twitter.com"
-  val method = PostMethod
-  val relativeUrl = "/1/statuses/update.json"
-  val headers = Seq(
-    "Accept" -> "*/*",
-    "Connection" -> "close",
-    "User-Agent" -> "OAuth gem v0.4.4",
-    "Content-Type" -> "application/x-www-form-urlencoded",
-    "Content-Length" -> "76",
-    "Host" -> "api.twitter.com")
+  val _baseUrl = "https://api.twitter.com"
+  val _method = PostMethod
+  val _relativeUrl = "/1/statuses/update.json"
+  val _headers = Seq(
+    "Accept" → "*/*",
+    "Connection" → "close",
+    "User-Agent" → "OAuth gem v0.4.4",
+    "Content-Type" → "application/x-www-form-urlencoded",
+    "Content-Length" → "76",
+    "Host" → "api.twitter.com"
+  )
 
-  val queryString = Map("include_entities" -> Seq("true"))
-  val body = "status=Hello Ladies + Gentlemen, a signed OAuth request!"
+  val _queryString = Map("include_entities" → Seq("true"))
+  val _body = "status=Hello Ladies + Gentlemen, a signed OAuth request!"
 
-  val request = new PostRequest[Array[Byte]](
-    relativeUrl = relativeUrl,
-    headers = headers,
-    queryString = queryString,
-    body = Some(body.getBytes("utf-8")),
-    method = method) {
-    override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
+  val request = new Request {
+    val completionEvaluator = new TrueCompletionEvaluation
+    val method = _method
+    val queryString = _queryString
+    val body = Some(_body.getBytes("utf-8"))
+    val headers = _headers
+    val relativeUrl = _relativeUrl
+    def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
   }
 
   val oauthConsumerSecret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw"
@@ -48,7 +50,8 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
     oauthConsumerSecret = oauthConsumerSecret,
     oauthTokenSecret = oauthTokenSecret,
     oauthNonce = oauthNonce,
-    oauthTimestamp = oauthTimestamp)(_, _)
+    oauthTimestamp = oauthTimestamp
+  )(_, _)
 
   private def _parameterString = {
     val fieldsWithoutSignature = TwitterAuthorizationHeader.createOauthFieldsWithoutSignature(
@@ -57,7 +60,8 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
       oauthConsumerSecret,
       oauthTokenSecret,
       oauthNonce,
-      oauthTimestamp)
+      oauthTimestamp
+    )
     TwitterAuthorizationHeader.createParameterString(request, fieldsWithoutSignature)
   }
 
@@ -67,7 +71,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
   }
 
   it should "create a valid signature base string for POSTs" in {
-    val signatureBaseString = TwitterAuthorizationHeader.createSignatureBaseString(baseUrl, request, _parameterString)
+    val signatureBaseString = TwitterAuthorizationHeader.createSignatureBaseString(_baseUrl, request, _parameterString)
     assert(signatureBaseString.equals(expectedSignatureBaseString))
   }
 
@@ -77,7 +81,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
   }
 
   it should "create valid authorization headers for POSTs " in {
-    val authHeader = twAuthHeaderGen(baseUrl, request)
+    val authHeader = twAuthHeaderGen(_baseUrl, request)
     assert(authHeader._1.equals(expectedAuthHeaderName))
     assert(authHeader._2.equals(expectedAuthHeaderValue))
   }

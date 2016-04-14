@@ -3,7 +3,7 @@ package twitter4s
 import com.typesafe.config.ConfigFactory
 import http.client.connection.impl.PlayWSHttpConnection
 import http.client.method.GetMethod
-import http.client.request.GetRequest
+import http.client.request.{Request, TrueCompletionEvaluation}
 import org.scalatest._
 
 import scala.concurrent.duration._
@@ -13,18 +13,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with Inside with Inspectors {
 
   val config = ConfigFactory.load("test.conf")
-  val baseUrl = config.getString("twitter4s.test.base-url")
-  val method = GetMethod
-  val relativeUrl = config.getString("twitter4s.test.relative-url")
-  val headers = Seq.empty[(String, String)]
-  val queryString = Map("screen_name" -> Seq("codewarrior"))
+  val _baseUrl = config.getString("twitter4s.test.base-url")
+  val _relativeUrl = config.getString("twitter4s.test.relative-url")
+  val _headers = Seq.empty[(String, String)]
+  val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = new GetRequest(
-    relativeUrl = relativeUrl,
-    headers = headers,
-    queryString = queryString,
-    method = method) {
-    override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
+  val request = new Request {
+    val completionEvaluator = new TrueCompletionEvaluation
+    val method = GetMethod
+    val queryString = _queryString
+    val body = None
+    val headers = _headers
+    val relativeUrl = _relativeUrl
+    def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
   }
 
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
@@ -36,22 +37,25 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
     oauthConsumerKey = oauthConsumerKey,
     oauthToken = oauthToken,
     oauthConsumerSecret = oauthConsumerSecret,
-    oauthTokenSecret = oauthTokenSecret)(_, _)
+    oauthTokenSecret = oauthTokenSecret
+  )(_, _)
 
   "Twitter request" should "properly fetch a user's timeline" in {
 
-    val authHeader = twAuthHeaderGen(baseUrl, request)
+    val authHeader = twAuthHeaderGen(_baseUrl, request)
 
-    val authRequest = new GetRequest(
-      relativeUrl = baseUrl + relativeUrl,
-      headers = headers ++ Seq(authHeader),
-      queryString = queryString,
-      method = method) {
-      override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
+    val authRequest = new Request {
+      val completionEvaluator = new TrueCompletionEvaluation
+      val method = GetMethod
+      val queryString = _queryString
+      val body = None
+      val headers = _headers ++ Seq(authHeader)
+      val relativeUrl = _baseUrl + _relativeUrl
+      def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
     }
 
     val conn = new PlayWSHttpConnection
-    val respF = conn.get(authRequest)
+    val respF = conn.makeRequest(authRequest)
     val resp = Await.result(respF, 10.seconds)
     assert(resp.status.equals(200))
     assert(resp.json.toString().contains("created_at"))

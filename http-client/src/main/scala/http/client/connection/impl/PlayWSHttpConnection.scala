@@ -21,9 +21,6 @@ private[impl] object PlayWsHttpResponse {
 
 class PlayWSHttpConnection extends HttpConnection {
 
-  val GET = "GET"
-  val POST = "POST"
-
   implicit val client = NingWSClient()
 
   private def queryStringToSeq(fields: Map[String, Seq[String]]): Seq[(String, String)] =
@@ -41,10 +38,14 @@ class PlayWSHttpConnection extends HttpConnection {
       .withQueryString(queryStringToSeq(request.queryString): _*)
       .withMethod(request.method.name)
 
-    request.body.map(b ⇒ r.withBody(b))
+    val req = if (request.body.isDefined) {
+      val r2 = r.withBody(request.body.get)
+      r2.execute()
+    } else {
+      r.execute()
+    }
 
-    r.execute()
-      .map(PlayWsHttpResponse.apply)
+    req.map(PlayWsHttpResponse.apply)
   }
 }
 

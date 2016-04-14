@@ -1,7 +1,7 @@
 package facebook4s
 
 import facebook4s.api.AccessToken
-import facebook4s.connection.{ WSClient, FacebookConnectionInformation }
+import facebook4s.connection.{WSClient, FacebookConnectionInformation}
 import facebook4s.request.FacebookBatchRequestBuilder
 import facebook4s.response.FacebookBatchResponsePart
 import org.scalatest.BeforeAndAfterAll
@@ -36,7 +36,8 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite with Before
             case uri                            ⇒ super.onRouteRequest(request)
           }
         }
-      }))
+      })
+    )
 
   "Parse batch responses" in {
 

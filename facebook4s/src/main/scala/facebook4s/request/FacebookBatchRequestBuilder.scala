@@ -74,13 +74,13 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
   override protected def makeBatchRequest(batchUrl: String, _body: Array[Byte]): Request = {
     val _headers = Seq(("Content-Type", s"multipart/form-data; boundary=$boundary"))
     new Request {
-      override val completionEvaluator = new TrueCompletionEvaluation
-      override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
-      override val method = PostMethod
-      override val queryString = Map.empty
-      override val body = _body
-      override val headers = _headers
-      override val relativeUrl = batchUrl
+      val completionEvaluator = new TrueCompletionEvaluation
+      val method = PostMethod
+      val queryString = Map.empty[String, Seq[String]]
+      val body = Some(_body)
+      val headers = _headers
+      val relativeUrl = batchUrl
+      def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
     }
   }
 
