@@ -8,8 +8,9 @@ import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnectionInformation
 import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart }
 import http.client.connection.HttpConnection
-import http.client.request.{ HttpBatchRequestBuilder, PostRequest, Request }
-import http.client.response.{ BatchResponse, BatchResponsePart, HttpResponse }
+import http.client.method.{ HttpMethod, PostMethod }
+import http.client.request.{ HttpBatchRequestBuilder, Request, TrueCompletionEvaluation }
+import http.client.response.HttpResponse
 
 import scala.collection.mutable.ListBuffer
 
@@ -29,7 +30,7 @@ object FacebookBatchRequestBuilder {
 import FacebookBatchRequestBuilder._
 
 class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection: HttpConnection, accessToken: Option[AccessToken], requests: ListBuffer[Request] = ListBuffer.empty)
-    extends HttpBatchRequestBuilder[FacebookGetRequest, FacebookPostRequest, FacebookBatchResponse, FacebookBatchResponsePart, FacebookBatchRequestBuilder](requests, connection, http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH)) {
+    extends HttpBatchRequestBuilder[FacebookBatchResponse, FacebookBatchResponsePart, FacebookBatchRequestBuilder](requests, connection, http(cfg.protocol, cfg.graphApiHost, cfg.version, FB_BATCH_PATH)) {
 
   private val boundary: String =
     "------------------------" + scala.util.Random.alphanumeric.take(16).mkString
@@ -70,10 +71,16 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
     buf.array()
   }
 
-  override protected def makeBatchRequest(batchUrl: String, body: Array[Byte]): PostRequest[Array[Byte]] = {
-    val headers = Seq(("Content-Type", s"multipart/form-data; boundary=$boundary"))
-    new PostRequest(batchUrl, headers, Map.empty, Some(body)) {
+  override protected def makeBatchRequest(batchUrl: String, _body: Array[Byte]): Request = {
+    val _headers = Seq(("Content-Type", s"multipart/form-data; boundary=$boundary"))
+    new Request {
+      override val completionEvaluator = new TrueCompletionEvaluation
       override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
+      override val method = PostMethod
+      override val queryString = Map.empty
+      override val body = _body
+      override val headers = _headers
+      override val relativeUrl = batchUrl
     }
   }
 

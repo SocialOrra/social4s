@@ -1,48 +1,39 @@
 package http.client.request
 
 import http.client.connection.HttpConnection
-import http.client.method.HttpMethod
 import http.client.response.{BatchResponse, BatchResponsePart, HttpResponse}
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class HttpBatchRequestBuilder[
-  GRequest <: GetRequest,
-  PRequest <: PostRequest[_],
   BResponse <: BatchResponse[BResponsePart],
   BResponsePart <: BatchResponsePart,
-  BRequestBuilder <: HttpBatchRequestBuilder[GRequest, PRequest, BResponse, BResponsePart, BRequestBuilder]]
+  BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]]
   (var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
 
   protected def makeBatchRequestBody(requests: Seq[Request]): Array[Byte]
-  protected def makeBatchRequest(batchUrl: String, body: Array[Byte]): PostRequest[Array[Byte]]
+  protected def makeBatchRequest(batchUrl: String, body: Array[Byte]): Request
   protected def fromHttpResponse(response: HttpResponse): BResponse
-  protected def maybePaginated(paginated: Boolean, request: Request): Request
   protected def accumulateCompleteRequest(reqRes: (Request, BResponsePart)): (Request, BResponsePart)
   protected def newRequestFromIncompleteRequest(reqRes: (Request, BResponsePart)): Request
+  protected def maybePaginated(paginated: Boolean, request: Request): Request
   protected def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request
 
   def shutdown() = connection.shutdown()
 
-  def get(getRequest: GRequest, since: Option[Long], until: Option[Long]): Unit =
-    batch(maybeRanged(since, until, getRequest))
+  def add(request: Request, since: Option[Long], until: Option[Long]): Unit =
+    batch(maybeRanged(since, until, request))
 
-  def get(getRequest: GRequest, paginate: Boolean): Unit =
-    batch(maybePaginated(paginate, getRequest))
-
-  def post[T](postRequest: PRequest, since: Option[Long], until: Option[Long]): Unit =
-    batch(maybeRanged(since, until, postRequest))
-
-  def post[T](postRequest: PRequest, paginated: Boolean): Unit =
-    batch(maybePaginated(paginated, postRequest))
+  def add(request: Request, paginated: Boolean): Unit =
+    batch(maybePaginated(paginated, request))
 
   def execute(implicit ec: ExecutionContext): Future[BResponse] = {
     // assemble request parts
     val body = makeBatchRequestBody(requests)
-    val postRequest = makeBatchRequest(batchUrl, body)
+    val request = makeBatchRequest(batchUrl, body)
     // and send it off
-    val f = connection.post(postRequest)
+    val f = connection.makeRequest(request)
       // map the response to our internal type
       .map(fromHttpResponse)
 
@@ -86,7 +77,7 @@ abstract class HttpBatchRequestBuilder[
     val body = makeBatchRequestBody(requests)
     val postRequest = makeBatchRequest(batchUrl, body)
 
-    connection.post(postRequest).map { rawResponse =>
+    connection.makeRequest(postRequest).map { rawResponse =>
 
       val response = fromHttpResponse(rawResponse)
 

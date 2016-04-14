@@ -10,9 +10,8 @@ import akka.util.Timeout
 import com.github.bucket4j.Buckets
 import com.typesafe.config.ConfigFactory
 import http.client.connection.HttpConnection
-import http.client.request.{ GetRequest, PostRequest, Request }
+import http.client.request.Request
 import http.client.response.HttpResponse
-import play.api.http.Writeable
 
 trait ThrottledHttpConnection extends HttpConnection {
 
@@ -30,17 +29,10 @@ trait ThrottledHttpConnection extends HttpConnection {
   protected val requestTimeoutDuration = 5.seconds
   protected val shutdownTimeoutDuration = 20.seconds
 
-  override def get(getRequest: GetRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
+  override def makeRequest(request: Request)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     implicit val timeout = new Timeout(requestTimeoutDuration)
-    actor ask Throttled(getRequest) flatMap { _ ⇒
-      connection.get(getRequest)
-    }
-  }
-
-  override def post[T](postRequest: PostRequest[T])(implicit ec: ExecutionContext, writeable: Writeable[T]): Future[HttpResponse] = {
-    implicit val timeout = new Timeout(requestTimeoutDuration)
-    actor ask Throttled(postRequest) flatMap { _ ⇒
-      connection.post(postRequest)
+    actor ask Throttled(request) flatMap { _ ⇒
+      connection.makeRequest(request)
     }
   }
 

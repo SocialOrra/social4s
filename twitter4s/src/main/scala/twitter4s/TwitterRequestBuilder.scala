@@ -1,13 +1,11 @@
 package twitter4s
 
 import http.client.connection.HttpConnection
-import http.client.request.{GetRequest, PostRequest, Request}
+import http.client.request.Request
 import http.client.response.{BatchResponsePart, HttpResponse}
-import play.api.http.Writeable
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.libs.json.JsValue
 
 trait TwitterResponsePart extends BatchResponsePart
 
@@ -20,27 +18,15 @@ abstract class TwitterRequestBuilder(connection: HttpConnection, batchUrl: Strin
 
   def shutdown() = connection.shutdown()
 
-  def get(getRequest: GetRequest, since: Option[Long], until: Option[Long]): Future[(Request, Seq[TwitterResponsePart])] = {
-    val r = maybeRanged(since, until, getRequest)
-    val f = connection.get(r)
+  def makeRequest[T](request: Request, since: Option[Long], until: Option[Long]): Future[(Request, Seq[TwitterResponsePart])] = {
+    val r = maybeRanged(since, until, request)
+    val f = connection.makeRequest(r)
     executeWithPagination(r, f)
   }
 
-  def get(getRequest: GetRequest, paginate: Boolean): Future[(Request, Seq[TwitterResponsePart])] = {
-    val r = maybePaginated(paginate, getRequest)
-    val f = connection.get(r)
-    executeWithPagination(r, f)
-  }
-
-  def post[T](postRequest: PostRequest[T], since: Option[Long], until: Option[Long])(implicit writeable: Writeable[T]): Future[(Request, Seq[TwitterResponsePart])] = {
-    val r = maybeRanged(since, until, postRequest)
-    val f = connection.post(r)
-    executeWithPagination(r, f)
-  }
-
-  def post[T](postRequest: PostRequest[T], paginated: Boolean)(implicit writeable: Writeable[T]): Future[(Request, Seq[TwitterResponsePart])] = {
-    val r = maybePaginated(paginated, postRequest)
-    val f = connection.post(r)
+  def makeRequest[T](request: Request, paginated: Boolean): Future[(Request, Seq[TwitterResponsePart])] = {
+    val r = maybePaginated(paginated, request)
+    val f = connection.makeRequest(r)
     executeWithPagination(r, f)
   }
 

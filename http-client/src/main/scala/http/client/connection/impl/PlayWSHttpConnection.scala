@@ -1,11 +1,10 @@
 package http.client.connection.impl
 
 import http.client.connection.HttpConnection
-import http.client.request.{ GetRequest, PostRequest }
+import http.client.request.Request
 import http.client.response.HttpResponse
-import play.api.http.Writeable
 import play.api.libs.ws.WSResponse
-import play.api.libs.ws.ning.{ NingWSClient, NingWSRequest }
+import play.api.libs.ws.ning.NingWSClient
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -35,25 +34,16 @@ class PlayWSHttpConnection extends HttpConnection {
 
   override def shutdown() = client.close()
 
-  override def get(getRequest: GetRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
+  override def makeRequest(request: Request)(implicit ec: ExecutionContext): Future[HttpResponse] = {
+    val r = client
+      .url(request.relativeUrl)
+      .withHeaders(request.headers: _*)
+      .withQueryString(queryStringToSeq(request.queryString): _*)
+      .withMethod(request.method.name)
 
-    client
-      .url(getRequest.relativeUrl)
-      .withHeaders(getRequest.headers: _*)
-      .withQueryString(queryStringToSeq(getRequest.queryString): _*)
-      .withMethod(GET)
-      .execute()
-      .map(PlayWsHttpResponse.apply)
-  }
+    request.body.map(b ⇒ r.withBody(b))
 
-  override def post[T](postRequest: PostRequest[T])(implicit ec: ExecutionContext, bodyWriteable: Writeable[T]): Future[HttpResponse] = {
-    client
-      .url(postRequest.relativeUrl)
-      .withHeaders(postRequest.headers: _*)
-      .withQueryString(queryStringToSeq(postRequest.queryString): _*)
-      .withMethod(POST)
-      .withBody[T](postRequest.body.getOrElse(null.asInstanceOf[T]))(bodyWriteable)
-      .execute()
+    r.execute()
       .map(PlayWsHttpResponse.apply)
   }
 }

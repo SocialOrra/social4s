@@ -7,7 +7,7 @@ import javax.crypto.spec.SecretKeySpec
 
 import com.ning.http.util.Base64
 import http.client.method.PostMethod
-import http.client.request.{ PostRequest, Request }
+import http.client.request.Request
 
 import scala.compat.Platform
 
@@ -101,7 +101,7 @@ object TwitterAuthorizationHeader {
     if (request.method.equals(PostMethod)) {
 
       // TODO: this only supports strings and byte arrays
-      val body = request.asInstanceOf[PostRequest[_]].body.map {
+      val body = request.body.map {
         case a: Array[Byte] ⇒ new String(a, "utf-8")
         case x              ⇒ x.toString
       }
