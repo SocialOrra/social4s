@@ -6,11 +6,7 @@ import http.client.response.{BatchResponse, BatchResponsePart, HttpResponse}
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class HttpBatchRequestBuilder[
-  BResponse <: BatchResponse[BResponsePart],
-  BResponsePart <: BatchResponsePart,
-  BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]]
-  (var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
+abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart], BResponsePart <: BatchResponsePart, BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]](var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
 
   protected def makeBatchRequestBody(requests: Seq[Request]): Array[Byte]
   protected def makeBatchRequest(batchUrl: String, body: Array[Byte]): Request
@@ -77,7 +73,7 @@ abstract class HttpBatchRequestBuilder[
     val body = makeBatchRequestBody(requests)
     val postRequest = makeBatchRequest(batchUrl, body)
 
-    connection.makeRequest(postRequest).map { rawResponse =>
+    connection.makeRequest(postRequest).map { rawResponse ⇒
 
       val response = fromHttpResponse(rawResponse)
 

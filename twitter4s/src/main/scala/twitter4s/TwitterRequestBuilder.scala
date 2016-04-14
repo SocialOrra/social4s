@@ -42,8 +42,7 @@ abstract class TwitterRequestBuilder(connection: HttpConnection, batchUrl: Strin
 
   private def _executeWithPagination(request: Request, responseF: Future[HttpResponse], completedResponseParts: Seq[TwitterResponsePart] = Seq.empty)(implicit ec: ExecutionContext): Future[(Request, Seq[TwitterResponsePart])] = {
 
-    responseF.map { response =>
-
+    responseF.map { response ⇒
 
       val responsePart = extractResponsePart(request, response)
 
@@ -64,7 +63,7 @@ abstract class TwitterRequestBuilder(connection: HttpConnection, batchUrl: Strin
 
   private def isRequestComplete(request: Request, response: TwitterResponsePart): Boolean = {
 
-    if (response.code== 200) {
+    if (response.code == 200) {
       request.isComplete(response)
     } else {
       // error

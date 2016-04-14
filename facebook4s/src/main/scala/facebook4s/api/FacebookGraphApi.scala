@@ -1,6 +1,6 @@
 package facebook4s.api
 
-import facebook4s.request.{ FacebookGetRequest, FacebookBatchRequestBuilder }
+import facebook4s.request.{FacebookGetRequest, FacebookBatchRequestBuilder}
 
 object FacebookGraphApi {
 

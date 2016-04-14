@@ -30,14 +30,17 @@ object TwitterAuthorizationHeader {
    *  @param request the request to generate the header for
    *  @return a Tuple of 2 strings, the header's name, and the value
    */
-  def generate(oauthConsumerKey: String,
-               oauthToken: String,
-               oauthConsumerSecret: String,
-               oauthTokenSecret: String,
-               oauthNonce: String = scala.util.Random.alphanumeric.take(16).mkString,
-               oauthTimestamp: String = (Platform.currentTime / 1000).toString)(
-                 baseUrl: String,
-                 request: Request): (String, String) = {
+  def generate(
+    oauthConsumerKey:    String,
+    oauthToken:          String,
+    oauthConsumerSecret: String,
+    oauthTokenSecret:    String,
+    oauthNonce:          String = scala.util.Random.alphanumeric.take(16).mkString,
+    oauthTimestamp:      String = (Platform.currentTime / 1000).toString
+  )(
+    baseUrl: String,
+    request: Request
+  ): (String, String) = {
 
     val fieldsWithoutSignature = createOauthFieldsWithoutSignature(
       oauthConsumerKey,
@@ -45,10 +48,11 @@ object TwitterAuthorizationHeader {
       oauthConsumerSecret,
       oauthTokenSecret,
       oauthNonce,
-      oauthTimestamp)
+      oauthTimestamp
+    )
 
     val fields = fieldsWithoutSignature ++
-      Map("oauth_signature" -> oauthSignature(baseUrl, request, fieldsWithoutSignature, oauthConsumerSecret, oauthTokenSecret))
+      Map("oauth_signature" → oauthSignature(baseUrl, request, fieldsWithoutSignature, oauthConsumerSecret, oauthTokenSecret))
 
     val encodedFields = fields
       .toSeq
@@ -56,24 +60,27 @@ object TwitterAuthorizationHeader {
       .sortBy(_._1)
       .map(kv ⇒ { percentEncode(kv._1).getOrElse(s"INVALID_KEY_${kv._1}") + "=\"" + percentEncode(kv._2).getOrElse(s"INVALID_VALUE_${kv._2}") + "\"" })
 
-    val oauthHeader = "Authorization" -> s"OAuth ${encodedFields.mkString(", ")}"
+    val oauthHeader = "Authorization" → s"OAuth ${encodedFields.mkString(", ")}"
 
     oauthHeader
   }
 
-  private[twitter4s] def createOauthFieldsWithoutSignature(oauthConsumerKey: String,
-                                                           oauthToken: String,
-                                                           oauthConsumerSecret: String,
-                                                           oauthTokenSecret: String,
-                                                           oauthNonce: String,
-                                                           oauthTimestamp: String): Map[String, String] = {
+  private[twitter4s] def createOauthFieldsWithoutSignature(
+    oauthConsumerKey:    String,
+    oauthToken:          String,
+    oauthConsumerSecret: String,
+    oauthTokenSecret:    String,
+    oauthNonce:          String,
+    oauthTimestamp:      String
+  ): Map[String, String] = {
     Map(
-      "oauth_consumer_key" -> oauthConsumerKey,
-      "oauth_token" -> oauthToken,
-      "oauth_nonce" -> oauthNonce,
-      "oauth_signature_method" -> oauthSignatureMethod,
-      "oauth_timestamp" -> oauthTimestamp,
-      "oauth_version" -> oauthVersion)
+      "oauth_consumer_key" → oauthConsumerKey,
+      "oauth_token" → oauthToken,
+      "oauth_nonce" → oauthNonce,
+      "oauth_signature_method" → oauthSignatureMethod,
+      "oauth_timestamp" → oauthTimestamp,
+      "oauth_version" → oauthVersion
+    )
   }
 
   private[twitter4s] def percentEncode(s: String): Option[String] = {
@@ -126,7 +133,7 @@ object TwitterAuthorizationHeader {
 
     (queryStringToSeq(request.queryString) ++ oauthFields.toSeq ++ bodyParams)
       // percent encode keys and values
-      .map { kv ⇒ percentEncode(kv._1).getOrElse("") -> percentEncode(kv._2).getOrElse("") }
+      .map { kv ⇒ percentEncode(kv._1).getOrElse("") → percentEncode(kv._2).getOrElse("") }
       // sort by the key names
       .sortBy(_._1)
       // joing key and value with "="

@@ -13,5 +13,5 @@ addSbtPlugin("io.spray" % "sbt-revolver" % "0.7.2")
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "0.99.5")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.3.0")
+addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.6.0")
 

@@ -3,13 +3,13 @@ package facebook4s.request
 import java.nio.ByteBuffer
 
 import com.ning.http.client.FluentCaseInsensitiveStringsMap
-import com.ning.http.client.multipart.{ ByteArrayPart, MultipartUtils }
+import com.ning.http.client.multipart.{ByteArrayPart, MultipartUtils}
 import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnectionInformation
-import facebook4s.response.{ FacebookBatchResponse, FacebookBatchResponsePart }
+import facebook4s.response.{FacebookBatchResponse, FacebookBatchResponsePart}
 import http.client.connection.HttpConnection
-import http.client.method.{ HttpMethod, PostMethod }
-import http.client.request.{ HttpBatchRequestBuilder, Request, TrueCompletionEvaluation }
+import http.client.method.{HttpMethod, PostMethod}
+import http.client.request.{HttpBatchRequestBuilder, Request, TrueCompletionEvaluation}
 import http.client.response.HttpResponse
 
 import scala.collection.mutable.ListBuffer
@@ -24,7 +24,7 @@ object FacebookBatchRequestBuilder {
     s"$protocol://$domain/$version/$path"
 
   def accessTokenQS(accessToken: AccessToken): (String, Seq[String]) =
-    ACCESS_TOKEN -> Seq(accessToken.token)
+    ACCESS_TOKEN → Seq(accessToken.token)
 }
 
 import FacebookBatchRequestBuilder._
@@ -53,13 +53,13 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
   }
 
   override protected def makeBatchRequestBody(requests: Seq[Request]): Array[Byte] = {
-    val parts = accessToken.map { a ⇒ Seq(ACCESS_TOKEN -> a.token.getBytes("utf-8")) }
+    val parts = accessToken.map { a ⇒ Seq(ACCESS_TOKEN → a.token.getBytes("utf-8")) }
       .getOrElse(Seq.empty[(String, Array[Byte])]) ++
-      Seq(BATCH -> ("[" + requests.map(_.toJson()).mkString(",") + "]").getBytes("utf-8"))
+      Seq(BATCH → ("[" + requests.map(_.toJson()).mkString(",") + "]").getBytes("utf-8"))
 
-    val s = accessToken.map { a ⇒ Seq(ACCESS_TOKEN -> a.token) }
+    val s = accessToken.map { a ⇒ Seq(ACCESS_TOKEN → a.token) }
       .getOrElse(Seq.empty[(String, String)]) ++
-      Seq(BATCH -> ("[" + requests.map(_.toJson()).mkString(",") + "]"))
+      Seq(BATCH → ("[" + requests.map(_.toJson()).mkString(",") + "]"))
 
     val byteArrayParts = parts.map(p ⇒ new ByteArrayPart(p._1, p._2))
     val headers = new FluentCaseInsensitiveStringsMap().add("Content-Type", s"multipart/form-data; boundary=$boundary")

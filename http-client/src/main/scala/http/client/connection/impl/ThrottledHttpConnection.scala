@@ -3,9 +3,9 @@ package http.client.connection.impl
 import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{Await, ExecutionContext, Future}
 import akka.pattern.ask
-import akka.actor.{ Actor, ActorLogging, ActorSystem, Props }
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.util.Timeout
 import com.github.bucket4j.Buckets
 import com.typesafe.config.ConfigFactory

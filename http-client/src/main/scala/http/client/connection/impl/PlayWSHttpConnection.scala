@@ -6,7 +6,7 @@ import http.client.response.HttpResponse
 import play.api.libs.ws.WSResponse
 import play.api.libs.ws.ning.NingWSClient
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 private[impl] case class PlayWsHttpResponse(status: Int, headers: Map[String, Seq[String]], response: WSResponse) extends HttpResponse {
   override def statusText = response.statusText
