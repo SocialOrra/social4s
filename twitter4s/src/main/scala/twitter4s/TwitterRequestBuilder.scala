@@ -1,11 +1,34 @@
 package twitter4s
 
 import http.client.connection.HttpConnection
-import http.client.request.Request
-import http.client.response.HttpResponse
+import http.client.method.HttpMethod
+import http.client.request.{CompletionEvaluation, Request}
+import http.client.response.{BatchResponsePart, HttpResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+
+object TwitterEmptyNextCursorCompletionEvaluation extends CompletionEvaluation {
+  override def apply(request: Request, response: BatchResponsePart): Boolean = {
+    ???
+  }
+}
+
+object TwitterPaginatedRequest {
+  def apply(request: Request): TwitterPaginatedRequest = {
+    TwitterPaginatedRequest(
+      relativeUrl = request.relativeUrl,
+      headers = request.headers,
+      queryString = request.queryString,
+      body = request.body,
+      method = request.method,
+      completionEvaluator = ???
+    )
+  }
+}
+case class TwitterPaginatedRequest(relativeUrl: String, headers: Seq[(String, String)], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, completionEvaluator: CompletionEvaluation) extends Request {
+  override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ???
+}
 
 class TwitterRequestBuilder(connection: HttpConnection) {
 
@@ -54,8 +77,11 @@ class TwitterRequestBuilder(connection: HttpConnection) {
   private def isRequestComplete(request: Request, response: HttpResponse): Boolean = {
 
     if (response.status == 200) {
-      //request.isComplete(response)
-      // TODO: implement
+      // this works for paginated requests with cursors where we want to scroll until the end
+      // TODO: need to support since / until as well, so this code will move elsewhere
+      // TODO: use completion evalutor and create a TwitterRequest type to wrap it up
+      //val hasNext = (response.json \ "next_cursor").validate[Long].map(_ > 0).getOrElse(false)
+      //hasNext
       true
     } else {
       // error
@@ -64,7 +90,11 @@ class TwitterRequestBuilder(connection: HttpConnection) {
   }
 
   protected def newRequestFromIncompleteRequest(request: Request, response: HttpResponse): Request = ???
-  protected def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request = request // TODO: implement
-  protected def maybePaginated(paginated: Boolean, request: Request): Request = request // TODO: implement
+  protected def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request = request // todo: implement
+
+  protected def maybePaginated(paginated: Boolean, request: Request): Request = {
+    if (paginated) TwitterPaginatedRequest(request)
+    else request
+  }
 }
 
