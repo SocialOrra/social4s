@@ -1,12 +1,12 @@
 package http.client.request
 
 import http.client.connection.HttpConnection
-import http.client.response.{BatchResponse, BatchResponsePart, HttpResponse}
+import http.client.response.{BatchResponse, HttpResponse}
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart], BResponsePart <: BatchResponsePart, BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]](var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
+abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart], BResponsePart <: HttpResponse, BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]](var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
 
   protected def makeBatchRequestBody(requests: Seq[Request]): Array[Byte]
   protected def makeBatchRequest(batchUrl: String, body: Array[Byte]): Request
@@ -55,7 +55,7 @@ abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart]
           val request = requestAndResponseParts._1
           val parts = requestAndResponseParts._2
           //val combinedBody: String = parts.map(p ⇒ p.bodyJson.validate[JsObject].get).foldLeft(JsObject(Seq.empty))(_ deepMerge _).toString()
-          //val combinedPart = BatchResponsePart(code = parts.head.code, headers = parts.head.headers, body = combinedBody)
+          //val combinedPart = HttpResponse(code = parts.head.code, headers = parts.head.headers, body = combinedBody)
           (request, parts)
         }
     }
@@ -102,7 +102,7 @@ abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart]
     val request = reqRes._1
     val response = reqRes._2
 
-    if (response.code == 200) {
+    if (response.status == 200) {
       request.isComplete(reqRes._2)
     } else {
       // error

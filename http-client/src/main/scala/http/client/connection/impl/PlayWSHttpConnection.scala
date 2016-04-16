@@ -2,21 +2,27 @@ package http.client.connection.impl
 
 import http.client.connection.HttpConnection
 import http.client.request.Request
-import http.client.response.HttpResponse
+import http.client.response.{HttpHeader, HttpResponse}
 import play.api.libs.ws.WSResponse
 import play.api.libs.ws.ning.NingWSClient
 
 import scala.concurrent.{ExecutionContext, Future}
 
-private[impl] case class PlayWsHttpResponse(status: Int, headers: Map[String, Seq[String]], response: WSResponse) extends HttpResponse {
-  override def statusText = response.statusText
-  override def body = response.body
-  override def bodyAsBytes = response.bodyAsBytes
-  override def json = response.json
+private[impl] case class PlayWsHttpResponse(status: Int, headers: Seq[HttpHeader], response: WSResponse) extends HttpResponse {
+  override val statusText = response.statusText
+  override val body = response.body
+  override val bodyAsBytes = response.bodyAsBytes
+  override val json = response.json
 }
 
 private[impl] object PlayWsHttpResponse {
-  def apply(wsReponse: WSResponse): PlayWsHttpResponse = PlayWsHttpResponse(wsReponse.status, wsReponse.allHeaders, wsReponse)
+  def apply(wsReponse: WSResponse): PlayWsHttpResponse =
+    PlayWsHttpResponse(
+      wsReponse.status,
+      // turn Map[String, Seq[String]] into Seq[HttpHeader]
+      wsReponse.allHeaders.flatMap { kv ⇒ kv._2.map { v ⇒ HttpHeader(kv._1, v) } }.toSeq,
+      wsReponse
+    )
 }
 
 class PlayWSHttpConnection extends HttpConnection {

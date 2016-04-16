@@ -147,7 +147,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
       println("Waiting on requestBuilder's future...")
       val response = Await.result(future, 5.seconds)
       assert(response.parts.size == 1)
-      assert((response.parts.head.bodyJson \ "name").validate[String].get == profileName)
+      assert((response.parts.head.json \ "name").validate[String].get == profileName)
     } finally {
       requestBuilder.shutdown()
     }
@@ -180,7 +180,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
         val reqId = request.relativeUrl.split("/").head
         val reqSinceUntil = requests.find(_._1 == reqId).map(r ⇒ r._2 → r._3).get
-        val data = (responseParts.last.bodyJson \ "data").validate[JsArray].get
+        val data = (responseParts.last.json \ "data").validate[JsArray].get
         val values = (data.head \ "values").validate[JsArray].get
         val lastValue = (values.last \ "value").validate[Long]
 
@@ -209,7 +209,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
       val responseParts = reqRes._2
       val reqId = request.relativeUrl.split("/").head
       val reqSinceUntil = requests.find(_._1 == reqId).map(r ⇒ r._2 → r._3).get
-      val data = (responseParts.last.bodyJson \ "data").validate[JsArray].get
+      val data = (responseParts.last.json \ "data").validate[JsArray].get
       val values = (data.head \ "values").validate[JsArray].get
       val lastValue = (values.last \ "value").validate[Long]
 

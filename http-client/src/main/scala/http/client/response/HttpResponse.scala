@@ -4,9 +4,9 @@ import play.api.libs.json.JsValue
 
 trait HttpResponse {
   val status: Int
-  val headers: Map[String, Seq[String]]
-  def statusText: String
-  def body: String
-  def bodyAsBytes: Array[Byte]
-  def json: JsValue
+  val headers: Seq[HttpHeader] //Map[String, Seq[String]]
+  val statusText: String
+  val body: String
+  val bodyAsBytes: Array[Byte]
+  val json: JsValue
 }

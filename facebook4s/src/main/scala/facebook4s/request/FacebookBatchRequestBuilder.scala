@@ -8,7 +8,7 @@ import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnectionInformation
 import facebook4s.response.{FacebookBatchResponse, FacebookBatchResponsePart}
 import http.client.connection.HttpConnection
-import http.client.method.{HttpMethod, PostMethod}
+import http.client.method.{PostMethod}
 import http.client.request.{HttpBatchRequestBuilder, Request, TrueCompletionEvaluation}
 import http.client.response.HttpResponse
 

@@ -46,12 +46,12 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite with Before
 
     val returnCodes = (1 to NUM_SUCCESSES).map { _ ⇒ HTTP_SUCCESS_CODE } ++ (1 to NUM_ERRORS).map { _ ⇒ HTTP_ERROR_CODE }
     assert(parts.size == NUM_SUCCESSES + NUM_ERRORS)
-    assert(parts.map(_.code) == returnCodes)
+    assert(parts.map(_.status) == returnCodes)
 
-    parts.take(NUM_SUCCESSES).map(_.bodyJson) foreach { json ⇒
+    parts.take(NUM_SUCCESSES).map(_.json) foreach { json ⇒
       (json \ "name").validate[String].get == NAME
     }
-    parts.takeRight(NUM_ERRORS).map(_.bodyJson) foreach { json ⇒
+    parts.takeRight(NUM_ERRORS).map(_.json) foreach { json ⇒
       (json \ "error" \ "code").validate[Int].get == JSON_ERROR_CODE
     }
 

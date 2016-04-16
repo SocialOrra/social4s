@@ -1,8 +1,7 @@
 package facebook4s
 
-import facebook4s.api.AccessToken
-import facebook4s.request.FacebookBatchRequestBuilder
 import facebook4s.response._
+import http.client.response.HttpHeader
 import play.api.libs.json._
 
 object FacebookTestHelpers {
@@ -58,8 +57,8 @@ object FacebookTestHelpers {
   def makeJsonResponse(numSuccess: Int, numErrors: Int) =
     "[" + makeJsonBody(numSuccess, numErrors).mkString(",") + "]"
 
-  val defaultHeaders = Map("Content-Type" → Seq("text/javascript; charset=UTF-8"))
-  val defaultPartHeaders = Seq(FacebookBatchResponsePartHeader("Content-Type", "text/javascript; charset=UTF-8"))
+  val defaultHeaders = Seq(HttpHeader("Content-Type", "text/javascript; charset=UTF-8"))
+  val defaultPartHeaders = Seq(HttpHeader("Content-Type", "text/javascript; charset=UTF-8"))
 
   def makeBatchResponsePartBodyData(name: String = "data-name", period: String = "day", value: JsArray): JsObject = Json.obj(
     "name" → name,
@@ -72,11 +71,11 @@ object FacebookTestHelpers {
     "paging" → Json.toJson(paging)
   )
 
-  def makeBatchResponsePart(code: Int = 200, headers: Seq[FacebookBatchResponsePartHeader] = defaultPartHeaders, body: JsObject): FacebookBatchResponsePart = {
+  def makeBatchResponsePart(code: Int = 200, headers: Seq[HttpHeader] = defaultPartHeaders, body: JsObject): FacebookBatchResponsePart = {
     FacebookBatchResponsePart(code, headers, body.toString)
   }
 
-  def makeBatchResponse(code: Int = 200, headers: Map[String, Seq[String]] = defaultHeaders, parts: Seq[FacebookBatchResponsePart]): FacebookBatchResponse = {
+  def makeBatchResponse(code: Int = 200, headers: Seq[HttpHeader] = defaultHeaders, parts: Seq[FacebookBatchResponsePart]): FacebookBatchResponse = {
     FacebookBatchResponse(code, headers, parts)
   }
 

@@ -3,13 +3,13 @@ package twitter4s
 import http.client.connection.HttpConnection
 import http.client.method.HttpMethod
 import http.client.request.{CompletionEvaluation, Request}
-import http.client.response.{BatchResponsePart, HttpResponse}
+import http.client.response.HttpResponse
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object TwitterEmptyNextCursorCompletionEvaluation extends CompletionEvaluation {
-  override def apply(request: Request, response: BatchResponsePart): Boolean = {
+  override def apply(request: Request, response: HttpResponse): Boolean = {
     ???
   }
 }
