@@ -85,6 +85,13 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
   }
 
   override protected def fromHttpResponse(wsResponse: HttpResponse): FacebookBatchResponse = {
-    FacebookBatchResponse(wsResponse.status, wsResponse.headers, wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty))
+    FacebookBatchResponse(
+      wsResponse.status,
+      wsResponse.statusText,
+      wsResponse.headers,
+      wsResponse.bodyAsBytes,
+      wsResponse.json,
+      wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty)
+    )
   }
 }

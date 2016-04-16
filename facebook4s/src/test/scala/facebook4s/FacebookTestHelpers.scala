@@ -76,7 +76,7 @@ object FacebookTestHelpers {
   }
 
   def makeBatchResponse(code: Int = 200, headers: Seq[HttpHeader] = defaultHeaders, parts: Seq[FacebookBatchResponsePart]): FacebookBatchResponse = {
-    FacebookBatchResponse(code, headers, parts)
+    FacebookBatchResponse(code, code.toString, headers, Array.empty, Json.parse("{}"), parts)
   }
 
   def jsonDataPartResponse(id: Int): String =

@@ -1,7 +1,5 @@
 package http.client.response
 
-trait BatchResponse[P <: HttpResponse] {
-  val code: Int
-  val headers: Seq[HttpHeader] //Map[String, Seq[String]]
+trait BatchResponse[P <: HttpResponse] extends HttpResponse {
   val parts: Seq[P]
 }
