@@ -8,9 +8,9 @@ import facebook4s.api.AccessToken
 import facebook4s.connection.FacebookConnectionInformation
 import facebook4s.response.{FacebookBatchResponse, FacebookBatchResponsePart}
 import http.client.connection.HttpConnection
-import http.client.method.{PostMethod}
+import http.client.method.PostMethod
 import http.client.request.{HttpBatchRequestBuilder, Request, TrueCompletionEvaluation}
-import http.client.response.HttpResponse
+import http.client.response.{HttpHeader, HttpResponse}
 
 import scala.collection.mutable.ListBuffer
 
@@ -72,7 +72,7 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
   }
 
   override protected def makeBatchRequest(batchUrl: String, _body: Array[Byte]): Request = {
-    val _headers = Seq(("Content-Type", s"multipart/form-data; boundary=$boundary"))
+    val _headers = Seq(HttpHeader("Content-Type", s"multipart/form-data; boundary=$boundary"))
     new Request {
       val completionEvaluator = new TrueCompletionEvaluation
       val method = PostMethod

@@ -2,6 +2,7 @@ package twitter4s
 
 import http.client.method.PostMethod
 import http.client.request.{Request, TrueCompletionEvaluation}
+import http.client.response.HttpHeader
 import org.scalatest._
 
 class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers with OptionValues with Inside with Inspectors {
@@ -10,26 +11,24 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
   val _method = PostMethod
   val _relativeUrl = "/1/statuses/update.json"
   val _headers = Seq(
-    "Accept" → "*/*",
-    "Connection" → "close",
-    "User-Agent" → "OAuth gem v0.4.4",
-    "Content-Type" → "application/x-www-form-urlencoded",
-    "Content-Length" → "76",
-    "Host" → "api.twitter.com"
+    HttpHeader("Accept", "*/*"),
+    HttpHeader("Connection", "close"),
+    HttpHeader("User-Agent", "OAuth gem v0.4.4"),
+    HttpHeader("Content-Type", "application/x-www-form-urlencoded"),
+    HttpHeader("Content-Length", "76"),
+    HttpHeader("Host", "api.twitter.com")
   )
 
   val _queryString = Map("include_entities" → Seq("true"))
   val _body = "status=Hello Ladies + Gentlemen, a signed OAuth request!"
 
-  val request = new Request {
-    val completionEvaluator = new TrueCompletionEvaluation
-    val method = _method
-    val queryString = _queryString
-    val body = Some(_body.getBytes("utf-8"))
-    val headers = _headers
-    val relativeUrl = _relativeUrl
-    def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
-  }
+  val request = TwitterPaginatedRequest(
+    relativeUrl = _relativeUrl,
+    headers = _headers,
+    method = PostMethod,
+    queryString = _queryString,
+    body = Some(_body.getBytes("utf-8"))
+  )
 
   val oauthConsumerSecret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw"
   val oauthConsumerKey = "xvz1evFS4wEEPTGEFPHBog"

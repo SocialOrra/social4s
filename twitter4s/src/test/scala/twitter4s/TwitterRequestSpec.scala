@@ -3,7 +3,7 @@ package twitter4s
 import com.typesafe.config.ConfigFactory
 import http.client.connection.impl.PlayWSHttpConnection
 import http.client.method.GetMethod
-import http.client.request.{Request, TrueCompletionEvaluation}
+import http.client.response.HttpHeader
 import org.scalatest._
 
 import scala.concurrent.duration._
@@ -15,18 +15,16 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
   val config = ConfigFactory.load("test.conf")
   val _baseUrl = config.getString("twitter4s.test.base-url")
   val _relativeUrl = config.getString("twitter4s.test.relative-url")
-  val _headers = Seq.empty[(String, String)]
+  val _headers = Seq.empty[HttpHeader]
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = new Request {
-    val completionEvaluator = new TrueCompletionEvaluation
-    val method = GetMethod
-    val queryString = _queryString
-    val body = None
-    val headers = _headers
-    val relativeUrl = _relativeUrl
-    def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
-  }
+  val request = TwitterPaginatedRequest(
+    relativeUrl = _relativeUrl,
+    headers = _headers,
+    method = GetMethod,
+    queryString = _queryString,
+    body = None
+  )
 
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
   val oauthConsumerKey = config.getString("twitter4s.test.oauth-consumer-key")
@@ -44,15 +42,10 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
 
     val authHeader = twAuthHeaderGen(_baseUrl, request)
 
-    val authRequest = new Request {
-      val completionEvaluator = new TrueCompletionEvaluation
-      val method = GetMethod
-      val queryString = _queryString
-      val body = None
-      val headers = _headers ++ Seq(authHeader)
-      val relativeUrl = _baseUrl + _relativeUrl
-      def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
-    }
+    val authRequest = request.copy(
+      headers = _headers ++ Seq(HttpHeader.from(authHeader)),
+      relativeUrl = _baseUrl + _relativeUrl
+    )
 
     val conn = new PlayWSHttpConnection
     val respF = conn.makeRequest(authRequest)

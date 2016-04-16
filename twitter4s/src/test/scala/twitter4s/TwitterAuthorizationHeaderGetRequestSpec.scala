@@ -3,6 +3,7 @@ package twitter4s
 import com.typesafe.config.ConfigFactory
 import http.client.method.GetMethod
 import http.client.request.{Request, TrueCompletionEvaluation}
+import http.client.response.HttpHeader
 import org.scalatest._
 
 class TwitterAuthorizationHeaderGetRequestSpec extends FlatSpec with Matchers with OptionValues with Inside with Inspectors {
@@ -12,7 +13,7 @@ class TwitterAuthorizationHeaderGetRequestSpec extends FlatSpec with Matchers wi
   val _baseUrl = config.getString("twitter4s.test.base-url")
   val _method = GetMethod
   val _relativeUrl = config.getString("twitter4s.test.relative-url")
-  val _headers = Seq.empty[(String, String)]
+  val _headers = Seq.empty[HttpHeader]
   // TODO: fetch from config
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 

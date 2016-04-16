@@ -2,9 +2,9 @@ package facebook4s.request
 
 import facebook4s.api.AccessToken
 import facebook4s.response._
-import http.client.method.{PostMethod, GetMethod, HttpMethod}
+import http.client.method.{GetMethod, HttpMethod, PostMethod}
 import http.client.request._
-import http.client.response.HttpResponse
+import http.client.response.{HttpHeader, HttpResponse}
 import play.api.libs.json._
 
 object TimeRangeCompletionEvaluation extends CompletionEvaluation {
@@ -88,7 +88,7 @@ object FacebookRequest {
   }
 }
 
-case class FacebookGetRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[(String, String)], override val queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], override val method: HttpMethod = GetMethod)
+case class FacebookGetRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[HttpHeader], override val queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], override val method: HttpMethod = GetMethod)
     extends Request {
   override val completionEvaluator = new TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
@@ -99,7 +99,7 @@ case class FacebookGetRequest(override val relativeUrl: String, override val bod
   }
 }
 
-case class FacebookPostRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[(String, String)], override val queryString: Map[String, Seq[String]], data: Option[AccessToken], override val method: HttpMethod = PostMethod)
+case class FacebookPostRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[HttpHeader], override val queryString: Map[String, Seq[String]], data: Option[AccessToken], override val method: HttpMethod = PostMethod)
     extends Request {
   override val completionEvaluator = new TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {

@@ -3,18 +3,40 @@ package twitter4s
 import http.client.connection.HttpConnection
 import http.client.method.HttpMethod
 import http.client.request.{CompletionEvaluation, Request}
-import http.client.response.HttpResponse
+import http.client.response.{HttpHeader, HttpResponse}
+import play.api.libs.json.{JsSuccess, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object TwitterEmptyNextCursorCompletionEvaluation extends CompletionEvaluation {
   override def apply(request: Request, response: HttpResponse): Boolean = {
-    ???
+    (response.json \ "next_cursor").validate[Long] match {
+      case s: JsSuccess[Long] if s.get > 0 ⇒ false
+      case _                               ⇒ true
+    }
   }
 }
 
 object TwitterPaginatedRequest {
+
+  def apply(
+    relativeUrl: String,
+    headers:     Seq[HttpHeader],
+    queryString: Map[String, Seq[String]],
+    body:        Option[Array[Byte]],
+    method:      HttpMethod
+  ): TwitterPaginatedRequest = {
+    TwitterPaginatedRequest(
+      relativeUrl,
+      headers,
+      queryString,
+      body,
+      method,
+      TwitterEmptyNextCursorCompletionEvaluation
+    )
+  }
+
   def apply(request: Request): TwitterPaginatedRequest = {
     TwitterPaginatedRequest(
       relativeUrl = request.relativeUrl,
@@ -22,12 +44,12 @@ object TwitterPaginatedRequest {
       queryString = request.queryString,
       body = request.body,
       method = request.method,
-      completionEvaluator = ???
+      completionEvaluator = TwitterEmptyNextCursorCompletionEvaluation
     )
   }
 }
-case class TwitterPaginatedRequest(relativeUrl: String, headers: Seq[(String, String)], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, completionEvaluator: CompletionEvaluation) extends Request {
-  override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ???
+case class TwitterPaginatedRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, completionEvaluator: CompletionEvaluation) extends Request {
+  override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = "{}"
 }
 
 class TwitterRequestBuilder(connection: HttpConnection) {
@@ -77,11 +99,9 @@ class TwitterRequestBuilder(connection: HttpConnection) {
   private def isRequestComplete(request: Request, response: HttpResponse): Boolean = {
 
     if (response.status == 200) {
-      // this works for paginated requests with cursors where we want to scroll until the end
+      // this only works for paginated requests with cursors where we want to scroll until the end
       // TODO: need to support since / until as well, so this code will move elsewhere
-      // TODO: use completion evalutor and create a TwitterRequest type to wrap it up
-      //val hasNext = (response.json \ "next_cursor").validate[Long].map(_ > 0).getOrElse(false)
-      //hasNext
+      request.isComplete(response)
       true
     } else {
       // error

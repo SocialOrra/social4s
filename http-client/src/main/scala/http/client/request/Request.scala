@@ -1,11 +1,11 @@
 package http.client.request
 
 import http.client.method.HttpMethod
-import http.client.response.HttpResponse
+import http.client.response.{HttpHeader, HttpResponse}
 
 trait Request {
   val method: HttpMethod
-  val headers: Seq[(String, String)]
+  val headers: Seq[HttpHeader]
   val body: Option[Array[Byte]]
   val relativeUrl: String
   val queryString: Map[String, Seq[String]]
