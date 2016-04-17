@@ -18,7 +18,7 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
   val _headers = Seq.empty[HttpHeader]
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = TwitterPaginatedRequest(
+  val request = TwitterRequest(
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = GetMethod,

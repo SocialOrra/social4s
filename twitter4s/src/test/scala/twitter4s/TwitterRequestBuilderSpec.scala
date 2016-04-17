@@ -1,7 +1,8 @@
 package twitter4s
 
+import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import http.client.connection.impl.PlayWSHttpConnection
+import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnection}
 import http.client.method.GetMethod
 import http.client.response.HttpHeader
 import org.scalatest._
@@ -18,7 +19,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
   val _headers = Seq.empty[HttpHeader]
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = TwitterPaginatedRequest(
+  val request = TwitterRequest(
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = GetMethod,
@@ -53,5 +54,37 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     val resp = Await.result(respF, 10.seconds)
     assert(resp._2.head.status.equals(200))
     assert(resp._2.head.json.toString().contains("created_at"))
+  }
+
+  "TwitterRequestBuilder" should "properly fetch a user's followers and follow cursors" in {
+
+    val _relativeUrl = "/1.1/followers/ids.json"
+    val _queryString = Map("screen_name" → Seq("theSeanCook"))
+
+    val request = TwitterRequest(
+      relativeUrl = _relativeUrl,
+      headers = _headers,
+      method = GetMethod,
+      queryString = _queryString,
+      body = None
+    )
+
+    val authHeader = HttpHeader.from(twAuthHeaderGen(_baseUrl, request))
+
+    val authRequest = request.copy(
+      headers = _headers ++ Seq(authHeader),
+      relativeUrl = _baseUrl + _relativeUrl
+    )
+
+    val conn = new ThrottledHttpConnection {
+      override val actorSystem = ActorSystem("twitter4s-test")
+      override val connection = new PlayWSHttpConnection
+    }
+
+    val requestBuilder = new TwitterRequestBuilder(conn)
+    val respF = requestBuilder.makeRequest(authRequest, paginated = true)
+    val resp = Await.result(respF, 30.seconds)
+    assert(resp._2.head.status.equals(200))
+    assert(resp._2.size > 1)
   }
 }

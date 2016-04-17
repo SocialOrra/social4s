@@ -22,7 +22,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
   val _queryString = Map("include_entities" → Seq("true"))
   val _body = "status=Hello Ladies + Gentlemen, a signed OAuth request!"
 
-  val request = TwitterPaginatedRequest(
+  val request = TwitterRequest(
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = PostMethod,
