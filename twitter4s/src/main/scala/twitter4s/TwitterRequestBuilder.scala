@@ -31,9 +31,19 @@ object TwitterTimelineRequest {
   implicit val dataIdFmt = Json.format[DataId]
 }
 
-case class TwitterTimelineRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, paginated: Boolean) extends TwitterRequest {
+case class TwitterTimelineRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, paginated: Boolean, customCompletionEvaluator: Option[CompletionEvaluation] = None) extends TwitterRequest {
 
-  override val completionEvaluator = if (paginated) TwitterEmptyResponseBodyCompletionEvaluation else TrueCompletionEvaluation
+  override val completionEvaluator = if (paginated) {
+    customCompletionEvaluator match {
+      case Some(c) ⇒ new CompletionEvaluation {
+        override def apply(v1: Request, v2: HttpResponse): Boolean = {
+          c.apply(v1, v2) || TwitterEmptyResponseBodyCompletionEvaluation.apply(v1, v2)
+        }
+      }
+
+      case _ ⇒ TwitterEmptyResponseBodyCompletionEvaluation
+    }
+  } else TrueCompletionEvaluation
 
   override def nextRequest(response: HttpResponse): TwitterRequest = {
     // take last item in data, take it's ID, subtract 1 from it, and set it as max_id.
