@@ -20,39 +20,59 @@ object TwitterEmptyNextCursorCompletionEvaluation extends CompletionEvaluation {
   }
 }
 
-object TwitterRequest {
-
-  def apply(request: Request): TwitterRequest = {
-    TwitterRequest(
-      relativeUrl = request.relativeUrl,
-      headers = request.headers,
-      queryString = request.queryString,
-      body = request.body,
-      method = request.method
-    )
+object TwitterEmptyResponseBodyCompletionEvaluation extends CompletionEvaluation {
+  override def apply(request: Request, response: HttpResponse): Boolean = {
+    response.body.isEmpty
   }
 }
-case class TwitterRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, paginated: Boolean = false) extends Request {
-  // TODO: set this based on whether we're paginated or not
+
+case class TwitterTimelineRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, paginated: Boolean) extends TwitterRequest {
+
+  override val completionEvaluator = if (paginated) TwitterEmptyResponseBodyCompletionEvaluation else TrueCompletionEvaluation
+
+  override def nextRequest(response: HttpResponse): TwitterRequest = {
+    // take last item in data, take it's ID, subtract 1 from it, and set it as max_id.
+     val next = (response.json \ "next_cursor").validate[Long].get
+    val newQS = queryString + ("cursor" → Seq(next.toString))
+    copy(queryString = newQS)
+  }
+}
+
+case class TwitterCursoredRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, paginated: Boolean) extends TwitterRequest {
+
   override val completionEvaluator = if (paginated) TwitterEmptyNextCursorCompletionEvaluation else TrueCompletionEvaluation
+
+  override def nextRequest(response: HttpResponse): TwitterRequest = {
+    val next = (response.json \ "next_cursor").validate[Long].get
+    val newQS = queryString + ("cursor" → Seq(next.toString))
+    copy(queryString = newQS)
+  }
+}
+
+abstract class TwitterRequest extends Request {
+
+  val paginated: Boolean
+
   override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = "{}"
+
+  def nextRequest(response: HttpResponse): TwitterRequest
 }
 
 class TwitterRequestBuilder(connection: HttpConnection) {
 
   def shutdown() = connection.shutdown()
 
-  def makeRequest(request: TwitterRequest, since: Option[Long], until: Option[Long]): Future[(Request, Seq[HttpResponse])] = {
-    val r = maybeRanged(since, until, request)
-    executeWithPagination(r)
+  def makeRequest[R <: TwitterRequest](request: TwitterRequest, since: Option[Long], until: Option[Long]): Future[(Request, Seq[HttpResponse])] = {
+    //val r = maybeRanged(since, until, request)
+    executeWithPagination(request)
   }
 
-  def makeRequest(request: TwitterRequest, paginated: Boolean): Future[(Request, Seq[HttpResponse])] = {
-    val r = maybePaginated(paginated, request)
-    executeWithPagination(r)
+  def makeRequest[R <: TwitterRequest](request: TwitterRequest, paginated: Boolean): Future[(Request, Seq[HttpResponse])] = {
+    //val r = maybePaginated(paginated, request)
+    executeWithPagination(request)
   }
 
-  def executeWithPagination(request: TwitterRequest)(implicit ec: ExecutionContext): Future[(Request, Seq[HttpResponse])] = {
+  def executeWithPagination[R <: TwitterRequest](request: TwitterRequest)(implicit ec: ExecutionContext): Future[(Request, Seq[HttpResponse])] = {
     val f = _executeWithPagination(request) map { requestAndResponseParts ⇒
       // TODO: could there be no parts?
       val request = requestAndResponseParts._1
@@ -62,7 +82,7 @@ class TwitterRequestBuilder(connection: HttpConnection) {
     f
   }
 
-  private def _executeWithPagination(request: TwitterRequest, completedResponseParts: Seq[HttpResponse] = Seq.empty)(implicit ec: ExecutionContext): Future[(Request, Seq[HttpResponse])] = {
+  private def _executeWithPagination[R <: TwitterRequest](request: TwitterRequest, completedResponseParts: Seq[HttpResponse] = Seq.empty)(implicit ec: ExecutionContext): Future[(TwitterRequest, Seq[HttpResponse])] = {
 
     val responseF = connection.makeRequest(request)
 
@@ -82,7 +102,7 @@ class TwitterRequestBuilder(connection: HttpConnection) {
     }
   }
 
-  private def isRequestComplete(request: TwitterRequest, response: HttpResponse): Boolean = {
+  private def isRequestComplete[R <: TwitterRequest](request: TwitterRequest, response: HttpResponse): Boolean = {
 
     if (response.status == 200) {
       // this only works for paginated requests with cursors where we want to scroll until the end
@@ -95,20 +115,8 @@ class TwitterRequestBuilder(connection: HttpConnection) {
     }
   }
 
-  protected def newRequestFromIncompleteRequest(request: TwitterRequest, response: HttpResponse): TwitterRequest = {
-    val next = (response.json \ "next_cursor").validate[Long].get
-    val newQS = request.queryString + ("cursor" → Seq(next.toString))
-    request.copy(queryString = newQS)
-    request
-  }
-
-  protected def maybeRanged(since: Option[Long], until: Option[Long], request: TwitterRequest): TwitterRequest = request // todo: implement
-
-  protected def maybePaginated(paginated: Boolean, request: TwitterRequest): TwitterRequest = {
-    // TODO: this has no effect ATM, we need a way to turn pagination on and off
-    //if (paginated) TwitterRequest(request)
-    //else request
-    request
+  protected def newRequestFromIncompleteRequest[R <: TwitterRequest](request: TwitterRequest, response: HttpResponse): TwitterRequest = {
+    request.nextRequest(response)
   }
 }
 

@@ -16,12 +16,13 @@ class TwitterAuthorizationHeaderGetRequestSpec extends FlatSpec with Matchers wi
   // TODO: fetch from config
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = TwitterRequest(
+  val request = TwitterTimelineRequest(
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = _method,
     queryString = _queryString,
-    body = None
+    body = None,
+    paginated = false
   )
 
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")

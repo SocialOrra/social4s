@@ -8,7 +8,6 @@ import http.client.response.HttpHeader
 import org.scalatest._
 
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues with Inside with Inspectors {
@@ -19,12 +18,13 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
   val _headers = Seq.empty[HttpHeader]
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = TwitterRequest(
+  val request = TwitterTimelineRequest(
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = GetMethod,
     queryString = _queryString,
-    body = None
+    body = None,
+    paginated = false
   )
 
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
@@ -61,7 +61,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     val _relativeUrl = "/1.1/followers/ids.json"
     val _queryString = Map("screen_name" → Seq("theSeanCook"))
 
-    val request = TwitterRequest(
+    val request = TwitterCursoredRequest(
       relativeUrl = _relativeUrl,
       headers = _headers,
       method = GetMethod,

@@ -18,12 +18,13 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
   val _headers = Seq.empty[HttpHeader]
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = TwitterRequest(
+  val request = TwitterTimelineRequest(
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = GetMethod,
     queryString = _queryString,
-    body = None
+    body = None,
+    paginated = false
   )
 
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")

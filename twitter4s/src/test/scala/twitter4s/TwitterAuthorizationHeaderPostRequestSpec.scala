@@ -1,7 +1,6 @@
 package twitter4s
 
 import http.client.method.PostMethod
-import http.client.request.{Request, TrueCompletionEvaluation}
 import http.client.response.HttpHeader
 import org.scalatest._
 
@@ -22,12 +21,13 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
   val _queryString = Map("include_entities" → Seq("true"))
   val _body = "status=Hello Ladies + Gentlemen, a signed OAuth request!"
 
-  val request = TwitterRequest(
+  val request = TwitterTimelineRequest(
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = PostMethod,
     queryString = _queryString,
-    body = Some(_body.getBytes("utf-8"))
+    body = Some(_body.getBytes("utf-8")),
+    paginated = false
   )
 
   val oauthConsumerSecret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw"
