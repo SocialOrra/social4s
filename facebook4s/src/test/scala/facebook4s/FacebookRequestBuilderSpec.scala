@@ -41,8 +41,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
   val data = TreeMap(
     (0 until 1000) map { n ⇒
       n → Json.obj("key" → n, "value" → s"value-$n")
-    }: _*
-  )
+    }: _*)
 
   val multipartAction = Action.async(parse.multipartFormData) { request ⇒
     Future {
@@ -89,10 +88,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
                 previousSince,
                 previousUntil,
                 nextSince,
-                nextUntil
-              )
-            )
-          )
+                nextUntil)))
 
           parts
         }
@@ -111,15 +107,13 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
   val cfg: FacebookConnectionInformation = FacebookConnectionInformation(
     graphApiHost = s"localhost:$port",
-    protocol = "http"
-  )
+    protocol = "http")
 
   val requests = Seq(
     ("123", Some(0L), Some(100L)),
     ("456", Some(200L), Some(600L)),
     ("789", Some(300L), Some(400L)),
-    ("101", Some(10L), Some(900L))
-  )
+    ("101", Some(10L), Some(900L)))
 
   implicit override lazy val app: FakeApplication =
     FakeApplication(
@@ -130,8 +124,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
             case uri                           ⇒ super.onRouteRequest(request)
           }
         }
-      })
-    )
+      }))
 
   "Successfully use the Facebook Graph API" in {
     lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation()
@@ -189,8 +182,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
             "=== end condition ===\n" +
             s"lastValue:${lastValue.get} ?>= reqSinceUntil:${reqSinceUntil._2.get}" + "\n" +
             //"=== responses ===\n" + responseParts.map(_.bodyJson).mkString("\n") + "\n" +
-            "=== end ===========\n\n"
-        )
+            "=== end ===========\n\n")
 
         assert(lastValue.get >= reqSinceUntil._2.get)
       }
@@ -218,8 +210,7 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
           "=== end condition ===\n" +
           s"lastValue:${lastValue.get} ?>= reqSinceUntil:${reqSinceUntil._2.get}" + "\n" +
           //"=== responses ===\n" + responseParts.map(_.bodyJson).mkString("\n") + "\n" +
-          "=== end ===========\n\n"
-      )
+          "=== end ===========\n\n")
 
       assert(lastValue.get >= reqSinceUntil._2.get)
     }

@@ -24,8 +24,7 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
     method = GetMethod,
     queryString = _queryString,
     body = None,
-    paginated = false
-  )
+    paginated = false)
 
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
   val oauthConsumerKey = config.getString("twitter4s.test.oauth-consumer-key")
@@ -36,8 +35,7 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
     oauthConsumerKey = oauthConsumerKey,
     oauthToken = oauthToken,
     oauthConsumerSecret = oauthConsumerSecret,
-    oauthTokenSecret = oauthTokenSecret
-  )(_, _)
+    oauthTokenSecret = oauthTokenSecret)(_, _)
 
   "Twitter request" should "properly fetch a user's timeline" in {
 
@@ -45,8 +43,7 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
 
     val authRequest = request.copy(
       headers = _headers ++ Seq(HttpHeader.from(authHeader)),
-      relativeUrl = _baseUrl + _relativeUrl
-    )
+      relativeUrl = _baseUrl + _relativeUrl)
 
     val conn = new PlayWSHttpConnection
     val respF = conn.makeRequest(authRequest)

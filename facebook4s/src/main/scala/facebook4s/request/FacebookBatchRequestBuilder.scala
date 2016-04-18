@@ -91,7 +91,6 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
       wsResponse.headers,
       wsResponse.bodyAsBytes,
       wsResponse.json,
-      wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty)
-    )
+      wsResponse.json.validate[Seq[FacebookBatchResponsePart]].getOrElse(Seq.empty))
   }
 }

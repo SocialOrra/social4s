@@ -94,8 +94,7 @@ case class FacebookGetRequest(override val relativeUrl: String, override val bod
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" → JsString(method.name),
-      "relative_url" → JsString(relativeUrl + FacebookRequest.maybeQueryString(queryString ++ extraQueryStringParams, accessToken))
-    )).toString()
+      "relative_url" → JsString(relativeUrl + FacebookRequest.maybeQueryString(queryString ++ extraQueryStringParams, accessToken)))).toString()
   }
 }
 
@@ -105,8 +104,7 @@ case class FacebookPostRequest(override val relativeUrl: String, override val bo
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" → JsString(method.name),
-      "relative_url" → JsString(relativeUrl + FacebookRequest.maybeQueryString(queryString ++ extraQueryStringParams, data))
-    ) ++
+      "relative_url" → JsString(relativeUrl + FacebookRequest.maybeQueryString(queryString ++ extraQueryStringParams, data))) ++
       body.map(b ⇒ Seq("body" → JsString(new String(b, "utf-8")))).getOrElse(Seq.empty) // TODO: URLEncode() the body string, needed?
     ).toString()
   }

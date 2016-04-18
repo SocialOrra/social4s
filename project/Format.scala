@@ -5,8 +5,7 @@ object Format {
   import com.typesafe.sbt.SbtScalariform._
 
   lazy val settings = scalariformSettings ++ Seq(
-    ScalariformKeys.preferences := formattingPreferences
-  )
+    ScalariformKeys.preferences := formattingPreferences)
 
   lazy val formattingPreferences = {
     import scalariform.formatter.preferences._
@@ -19,7 +18,7 @@ object Format {
       setPreference(IndentSpaces, 2).
       setPreference(MultilineScaladocCommentsStartOnFirstLine, true).
       setPreference(PreserveSpaceBeforeArguments, false).
-      setPreference(PreserveDanglingCloseParenthesis, false).
+      setPreference(DanglingCloseParenthesis, Prevent).
       setPreference(RewriteArrowSymbols, true).
       setPreference(SpaceBeforeColon, false).
       setPreference(SpaceInsideBrackets, false).

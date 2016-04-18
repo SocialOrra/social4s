@@ -15,8 +15,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
     HttpHeader("User-Agent", "OAuth gem v0.4.4"),
     HttpHeader("Content-Type", "application/x-www-form-urlencoded"),
     HttpHeader("Content-Length", "76"),
-    HttpHeader("Host", "api.twitter.com")
-  )
+    HttpHeader("Host", "api.twitter.com"))
 
   val _queryString = Map("include_entities" → Seq("true"))
   val _body = "status=Hello Ladies + Gentlemen, a signed OAuth request!"
@@ -27,8 +26,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
     method = PostMethod,
     queryString = _queryString,
     body = Some(_body.getBytes("utf-8")),
-    paginated = false
-  )
+    paginated = false)
 
   val oauthConsumerSecret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw"
   val oauthConsumerKey = "xvz1evFS4wEEPTGEFPHBog"
@@ -49,8 +47,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
     oauthConsumerSecret = oauthConsumerSecret,
     oauthTokenSecret = oauthTokenSecret,
     oauthNonce = oauthNonce,
-    oauthTimestamp = oauthTimestamp
-  )(_, _)
+    oauthTimestamp = oauthTimestamp)(_, _)
 
   private def _parameterString = {
     val fieldsWithoutSignature = TwitterAuthorizationHeader.createOauthFieldsWithoutSignature(
@@ -59,8 +56,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
       oauthConsumerSecret,
       oauthTokenSecret,
       oauthNonce,
-      oauthTimestamp
-    )
+      oauthTimestamp)
     TwitterAuthorizationHeader.createParameterString(request, fieldsWithoutSignature)
   }
 

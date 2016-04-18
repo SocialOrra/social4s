@@ -32,7 +32,7 @@ case class TwitterTimelineRequest(relativeUrl: String, headers: Seq[HttpHeader],
 
   override def nextRequest(response: HttpResponse): TwitterRequest = {
     // take last item in data, take it's ID, subtract 1 from it, and set it as max_id.
-     val next = (response.json \ "next_cursor").validate[Long].get
+    val next = (response.json \ "next_cursor").validate[Long].get
     val newQS = queryString + ("cursor" → Seq(next.toString))
     copy(queryString = newQS)
   }

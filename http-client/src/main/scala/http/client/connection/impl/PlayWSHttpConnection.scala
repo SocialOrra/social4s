@@ -21,8 +21,7 @@ private[impl] object PlayWsHttpResponse {
       wsReponse.status,
       // turn Map[String, Seq[String]] into Seq[HttpHeader]
       wsReponse.allHeaders.flatMap { kv ⇒ kv._2.map { v ⇒ HttpHeader(kv._1, v) } }.toSeq,
-      wsReponse
-    )
+      wsReponse)
 }
 
 class PlayWSHttpConnection extends HttpConnection {

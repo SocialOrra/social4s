@@ -36,8 +36,7 @@ class FacebookConnectionSpec extends PlaySpec with OneServerPerSuite with Before
             case uri                            ⇒ super.onRouteRequest(request)
           }
         }
-      })
-    )
+      }))
 
   "Parse batch responses" in {
 

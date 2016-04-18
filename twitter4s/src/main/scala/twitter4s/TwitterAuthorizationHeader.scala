@@ -36,11 +36,9 @@ object TwitterAuthorizationHeader {
     oauthConsumerSecret: String,
     oauthTokenSecret:    String,
     oauthNonce:          String = scala.util.Random.alphanumeric.take(16).mkString,
-    oauthTimestamp:      String = (Platform.currentTime / 1000).toString
-  )(
+    oauthTimestamp:      String = (Platform.currentTime / 1000).toString)(
     baseUrl: String,
-    request: Request
-  ): (String, String) = {
+    request: Request): (String, String) = {
 
     val fieldsWithoutSignature = createOauthFieldsWithoutSignature(
       oauthConsumerKey,
@@ -48,8 +46,7 @@ object TwitterAuthorizationHeader {
       oauthConsumerSecret,
       oauthTokenSecret,
       oauthNonce,
-      oauthTimestamp
-    )
+      oauthTimestamp)
 
     val fields = fieldsWithoutSignature ++
       Map("oauth_signature" → oauthSignature(baseUrl, request, fieldsWithoutSignature, oauthConsumerSecret, oauthTokenSecret))
@@ -71,16 +68,14 @@ object TwitterAuthorizationHeader {
     oauthConsumerSecret: String,
     oauthTokenSecret:    String,
     oauthNonce:          String,
-    oauthTimestamp:      String
-  ): Map[String, String] = {
+    oauthTimestamp:      String): Map[String, String] = {
     Map(
       "oauth_consumer_key" → oauthConsumerKey,
       "oauth_token" → oauthToken,
       "oauth_nonce" → oauthNonce,
       "oauth_signature_method" → oauthSignatureMethod,
       "oauth_timestamp" → oauthTimestamp,
-      "oauth_version" → oauthVersion
-    )
+      "oauth_version" → oauthVersion)
   }
 
   private[twitter4s] def percentEncode(s: String): Option[String] = {

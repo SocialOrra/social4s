@@ -9,8 +9,7 @@ case class FacebookBatchResponse(
   override val headers:     Seq[HttpHeader],
   override val bodyAsBytes: Array[Byte],
   override val json:        JsValue,
-  override val parts:       Seq[FacebookBatchResponsePart]
-)
+  override val parts:       Seq[FacebookBatchResponsePart])
     extends BatchResponse[FacebookBatchResponsePart] {
   override val body: String = new String(bodyAsBytes)
 }

@@ -13,8 +13,7 @@ object FacebookMarketingApi extends FacebookApiHelpers {
       period:      Option[String]      = None,
       since:       Option[Long]        = None,
       until:       Option[Long]        = None,
-      accessToken: Option[AccessToken] = None
-    ) = {
+      accessToken: Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl(adId, "insights", metric)
       val modifiers = buildModifiers("period" → period)
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
@@ -23,8 +22,7 @@ object FacebookMarketingApi extends FacebookApiHelpers {
     def adAccountCampaigns(
       adAccountId: String,
       limit:       Option[Int]         = Some(DEFAULT_API_LIMIT),
-      accessToken: Option[AccessToken] = None
-    ) = {
+      accessToken: Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl(s"act_$adAccountId", "campaigns")
       val modifiers = buildModifiers("limit" → limit)
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = true)
@@ -32,8 +30,7 @@ object FacebookMarketingApi extends FacebookApiHelpers {
 
     def adCampaign(
       adCampaignId: String,
-      accessToken:  Option[AccessToken] = None
-    ) = {
+      accessToken:  Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl(adCampaignId)
       val modifiers = buildModifiers("fields" → Some("name,created_time"))
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = false)

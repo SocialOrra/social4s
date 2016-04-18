@@ -24,8 +24,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     method = GetMethod,
     queryString = _queryString,
     body = None,
-    paginated = false
-  )
+    paginated = false)
 
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
   val oauthConsumerKey = config.getString("twitter4s.test.oauth-consumer-key")
@@ -36,8 +35,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     oauthConsumerKey = oauthConsumerKey,
     oauthToken = oauthToken,
     oauthConsumerSecret = oauthConsumerSecret,
-    oauthTokenSecret = oauthTokenSecret
-  )(_, _)
+    oauthTokenSecret = oauthTokenSecret)(_, _)
 
   "TwitterRequestBuilder" should "properly fetch a user's timeline" in {
 
@@ -45,8 +43,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
 
     val authRequest = request.copy(
       headers = _headers ++ Seq(authHeader),
-      relativeUrl = _baseUrl + _relativeUrl
-    )
+      relativeUrl = _baseUrl + _relativeUrl)
 
     val conn = new PlayWSHttpConnection
     val requestBuilder = new TwitterRequestBuilder(conn)
@@ -67,15 +64,13 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
       method = GetMethod,
       queryString = _queryString,
       body = None,
-      paginated = true
-    )
+      paginated = true)
 
     val authHeader = HttpHeader.from(twAuthHeaderGen(_baseUrl, request))
 
     val authRequest = request.copy(
       headers = _headers ++ Seq(authHeader),
-      relativeUrl = _baseUrl + _relativeUrl
-    )
+      relativeUrl = _baseUrl + _relativeUrl)
 
     val conn = new ThrottledHttpConnection {
       override val actorSystem = ActorSystem("twitter4s-test")
