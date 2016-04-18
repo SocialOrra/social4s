@@ -11,8 +11,7 @@ lazy val commonSettings = Seq(
     "Sonatype OSS Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
     "Typesafe Snapshots" at "http://repo.typesafe.com/typesafe/snapshots/",
     "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
-    "JCenter" at "http://jcenter.bintray.com/")
-)
+    "JCenter" at "http://jcenter.bintray.com/"))
 
 lazy val httpClientDeps = Seq(
   bucket4j,
@@ -20,24 +19,21 @@ lazy val httpClientDeps = Seq(
   playWs,
   scalaTest,
   scalaTestPlus,
-  typesafeConfig
-)
+  typesafeConfig)
 
 lazy val f4sDeps = Seq(
   playJson,
   playWs,
   scalaTest,
   scalaTestPlus,
-  typesafeConfig
-)
+  typesafeConfig)
 
 lazy val t4sDeps = Seq(
   playJson,
   playWs,
   scalaTest,
   scalaTestPlus,
-  typesafeConfig
-)
+  typesafeConfig)
 
 lazy val root = (project in file(".")).
   settings(commonSettings: _*).
