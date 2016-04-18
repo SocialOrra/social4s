@@ -4,6 +4,6 @@ import http.client.response.HttpResponse
 
 trait CompletionEvaluation extends ((Request, HttpResponse) ⇒ Boolean)
 
-class TrueCompletionEvaluation extends CompletionEvaluation {
+object TrueCompletionEvaluation extends CompletionEvaluation {
   override def apply(request: Request, response: HttpResponse): Boolean = true
 }

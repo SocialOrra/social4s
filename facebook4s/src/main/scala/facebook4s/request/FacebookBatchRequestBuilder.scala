@@ -74,7 +74,7 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
   override protected def makeBatchRequest(batchUrl: String, _body: Array[Byte]): Request = {
     val _headers = Seq(HttpHeader("Content-Type", s"multipart/form-data; boundary=$boundary"))
     new Request {
-      val completionEvaluator = new TrueCompletionEvaluation
+      val completionEvaluator = TrueCompletionEvaluation
       val method = PostMethod
       val queryString = Map.empty[String, Seq[String]]
       val body = Some(_body)

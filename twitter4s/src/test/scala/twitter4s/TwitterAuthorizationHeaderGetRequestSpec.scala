@@ -2,7 +2,6 @@ package twitter4s
 
 import com.typesafe.config.ConfigFactory
 import http.client.method.GetMethod
-import http.client.request.{Request, TrueCompletionEvaluation}
 import http.client.response.HttpHeader
 import org.scalatest._
 
@@ -17,15 +16,13 @@ class TwitterAuthorizationHeaderGetRequestSpec extends FlatSpec with Matchers wi
   // TODO: fetch from config
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = new Request {
-    val completionEvaluator = new TrueCompletionEvaluation
-    val method = _method
-    val queryString = _queryString
-    val body = None
-    val headers = _headers
-    val relativeUrl = _relativeUrl
-    def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
-  }
+  val request = TwitterRequest(
+    relativeUrl = _relativeUrl,
+    headers = _headers,
+    method = _method,
+    queryString = _queryString,
+    body = None
+  )
 
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
   val oauthConsumerKey = config.getString("twitter4s.test.oauth-consumer-key")

@@ -66,7 +66,8 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
       headers = _headers,
       method = GetMethod,
       queryString = _queryString,
-      body = None
+      body = None,
+      paginated = true
     )
 
     val authHeader = HttpHeader.from(twAuthHeaderGen(_baseUrl, request))

@@ -90,7 +90,7 @@ object FacebookRequest {
 
 case class FacebookGetRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[HttpHeader], override val queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], override val method: HttpMethod = GetMethod)
     extends Request {
-  override val completionEvaluator = new TrueCompletionEvaluation
+  override val completionEvaluator = TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" → JsString(method.name),
@@ -101,7 +101,7 @@ case class FacebookGetRequest(override val relativeUrl: String, override val bod
 
 case class FacebookPostRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[HttpHeader], override val queryString: Map[String, Seq[String]], data: Option[AccessToken], override val method: HttpMethod = PostMethod)
     extends Request {
-  override val completionEvaluator = new TrueCompletionEvaluation
+  override val completionEvaluator = TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
       "method" → JsString(method.name),

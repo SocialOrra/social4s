@@ -2,7 +2,7 @@ package twitter4s
 
 import http.client.connection.HttpConnection
 import http.client.method.HttpMethod
-import http.client.request.{CompletionEvaluation, Request}
+import http.client.request.{CompletionEvaluation, Request, TrueCompletionEvaluation}
 import http.client.response.{HttpHeader, HttpResponse}
 import play.api.libs.json.JsSuccess
 
@@ -32,8 +32,9 @@ object TwitterRequest {
     )
   }
 }
-case class TwitterRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod) extends Request {
-  override val completionEvaluator = TwitterEmptyNextCursorCompletionEvaluation
+case class TwitterRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, paginated: Boolean = false) extends Request {
+  // TODO: set this based on whether we're paginated or not
+  override val completionEvaluator = if (paginated) TwitterEmptyNextCursorCompletionEvaluation else TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = "{}"
 }
 
@@ -105,8 +106,9 @@ class TwitterRequestBuilder(connection: HttpConnection) {
 
   protected def maybePaginated(paginated: Boolean, request: TwitterRequest): TwitterRequest = {
     // TODO: this has no effect ATM, we need a way to turn pagination on and off
-    if (paginated) TwitterRequest(request)
-    else request
+    //if (paginated) TwitterRequest(request)
+    //else request
+    request
   }
 }
 
