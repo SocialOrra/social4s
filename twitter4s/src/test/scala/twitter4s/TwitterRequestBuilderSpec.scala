@@ -24,7 +24,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     method = GetMethod,
     queryString = _queryString,
     body = None,
-    paginated = false)
+    paginated = true)
 
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
   val oauthConsumerKey = config.getString("twitter4s.test.oauth-consumer-key")
@@ -45,12 +45,16 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
       headers = _headers ++ Seq(authHeader),
       relativeUrl = _baseUrl + _relativeUrl)
 
-    val conn = new PlayWSHttpConnection
+    val conn = new ThrottledHttpConnection {
+      override val actorSystem = ActorSystem("twitter4s-test")
+      override val connection = new PlayWSHttpConnection
+    }
     val requestBuilder = new TwitterRequestBuilder(conn)
-    val respF = requestBuilder.makeRequest(authRequest, paginated = false)
-    val resp = Await.result(respF, 10.seconds)
+    val respF = requestBuilder.makeRequest(authRequest)
+    val resp = Await.result(respF, 30.seconds)
     assert(resp._2.head.status.equals(200))
     assert(resp._2.head.json.toString().contains("created_at"))
+    assert(resp._2.size > 1)
   }
 
   "TwitterRequestBuilder" should "properly fetch a user's followers and follow cursors" in {
@@ -78,7 +82,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     }
 
     val requestBuilder = new TwitterRequestBuilder(conn)
-    val respF = requestBuilder.makeRequest(authRequest, paginated = true)
+    val respF = requestBuilder.makeRequest(authRequest)
     val resp = Await.result(respF, 30.seconds)
     assert(resp._2.head.status.equals(200))
     assert(resp._2.size > 1)
