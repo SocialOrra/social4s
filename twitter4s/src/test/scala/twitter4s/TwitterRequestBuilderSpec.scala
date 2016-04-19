@@ -6,6 +6,7 @@ import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnectio
 import http.client.method.GetMethod
 import http.client.response.HttpHeader
 import org.scalatest._
+import twitter4s.request.{TwitterAuthorizationHeader, TwitterCursoredRequest, TwitterRequestBuilder, TwitterTimelineRequest}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

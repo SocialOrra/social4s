@@ -1,4 +1,4 @@
-package twitter4s
+package twitter4s.request
 
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder

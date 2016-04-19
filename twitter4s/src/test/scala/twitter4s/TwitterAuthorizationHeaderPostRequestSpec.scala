@@ -3,6 +3,7 @@ package twitter4s
 import http.client.method.PostMethod
 import http.client.response.HttpHeader
 import org.scalatest._
+import twitter4s.request.{TwitterAuthorizationHeader, TwitterTimelineRequest}
 
 class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers with OptionValues with Inside with Inspectors {
 

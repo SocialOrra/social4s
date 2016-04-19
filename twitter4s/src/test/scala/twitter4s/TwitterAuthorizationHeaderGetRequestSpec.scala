@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import http.client.method.GetMethod
 import http.client.response.HttpHeader
 import org.scalatest._
+import twitter4s.request.{TwitterAuthorizationHeader, TwitterTimelineRequest}
 
 class TwitterAuthorizationHeaderGetRequestSpec extends FlatSpec with Matchers with OptionValues with Inside with Inspectors {
 
