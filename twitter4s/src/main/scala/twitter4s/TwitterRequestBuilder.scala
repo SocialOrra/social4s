@@ -31,17 +31,18 @@ object TwitterTimelineRequest {
   implicit val dataIdFmt = Json.format[DataId]
 }
 
+case class OrElseCompletionEvaluation(ce1: CompletionEvaluation, ce2: CompletionEvaluation) extends CompletionEvaluation {
+  override def apply(v1: Request, v2: HttpResponse): Boolean = {
+    ce1.apply(v1, v2) || ce2.apply(v1, v2)
+  }
+}
+
 case class TwitterTimelineRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, paginated: Boolean, customCompletionEvaluator: Option[CompletionEvaluation] = None) extends TwitterRequest {
 
   override val completionEvaluator = if (paginated) {
     customCompletionEvaluator match {
-      case Some(c) ⇒ new CompletionEvaluation {
-        override def apply(v1: Request, v2: HttpResponse): Boolean = {
-          c.apply(v1, v2) || TwitterEmptyResponseBodyCompletionEvaluation.apply(v1, v2)
-        }
-      }
-
-      case _ ⇒ TwitterEmptyResponseBodyCompletionEvaluation
+      case Some(c) ⇒ OrElseCompletionEvaluation(customCompletionEvaluator.get, TrueCompletionEvaluation)
+      case _       ⇒ TwitterEmptyResponseBodyCompletionEvaluation
     }
   } else TrueCompletionEvaluation
 
@@ -55,14 +56,20 @@ case class TwitterTimelineRequest(relativeUrl: String, headers: Seq[HttpHeader],
       case _ ⇒
         // TODO: how do we handle this case?
         println(s"OH NO! Could not find data with an id in ${response.json.toString}")
-        ???
+        val newQS = queryString + ("max_id" → Seq(0.toString))
+        copy(queryString = newQS)
     }
   }
 }
 
-case class TwitterCursoredRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, paginated: Boolean) extends TwitterRequest {
+case class TwitterCursoredRequest(relativeUrl: String, headers: Seq[HttpHeader], queryString: Map[String, Seq[String]], body: Option[Array[Byte]], method: HttpMethod, paginated: Boolean, customCompletionEvaluator: Option[CompletionEvaluation] = None) extends TwitterRequest {
 
-  override val completionEvaluator = if (paginated) TwitterEmptyNextCursorCompletionEvaluation else TrueCompletionEvaluation
+  override val completionEvaluator = if (paginated) {
+    customCompletionEvaluator match {
+      case Some(c) ⇒ OrElseCompletionEvaluation(customCompletionEvaluator.get, TrueCompletionEvaluation)
+      case _       ⇒ TwitterEmptyNextCursorCompletionEvaluation
+    }
+  } else TrueCompletionEvaluation
 
   override def nextRequest(response: HttpResponse): TwitterRequest = {
     val next = (response.json \ "next_cursor").validate[Long].get
@@ -83,11 +90,6 @@ abstract class TwitterRequest extends Request {
 class TwitterRequestBuilder(connection: HttpConnection) {
 
   def shutdown() = connection.shutdown()
-
-  def makeRequest[R <: TwitterRequest](request: TwitterRequest, since: Option[Long], until: Option[Long]): Future[(Request, Seq[HttpResponse])] = {
-    //val r = maybeRanged(since, until, request)
-    executeWithPagination(request)
-  }
 
   def makeRequest[R <: TwitterRequest](request: TwitterRequest): Future[(Request, Seq[HttpResponse])] = {
     executeWithPagination(request)
@@ -126,9 +128,6 @@ class TwitterRequestBuilder(connection: HttpConnection) {
   private def isRequestComplete[R <: TwitterRequest](request: TwitterRequest, response: HttpResponse): Boolean = {
 
     if (response.status == 200) {
-      // this only works for paginated requests with cursors where we want to scroll until the end
-      // TODO: need to support since / until as well, so this code will move elsewhere
-      //       since / until can be implemented via a custom completion evaluator that takes user input into account
       request.isComplete(response)
     } else {
       // error
