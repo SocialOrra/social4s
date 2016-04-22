@@ -2,9 +2,9 @@ import sbt._
 import Dependencies._
 
 lazy val commonSettings = Seq(
-  name := "facebook4s",
+  name := "social4s",
   version := "1.0.0",
-  organization := "facebook4s",
+  organization := "social4s",
   scalaVersion := "2.11.7",
   resolvers ++= Seq(Resolver.mavenLocal,
     "Sonatype OSS Releases" at "http://oss.sonatype.org/content/repositories/releases/",
@@ -35,10 +35,17 @@ lazy val t4sDeps = Seq(
   scalaTestPlus,
   typesafeConfig)
 
+lazy val g4sDeps = Seq(
+  playJson,
+  playWs,
+  scalaTest,
+  scalaTestPlus,
+  typesafeConfig)
+
 lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(name := "social4s").
-  aggregate(httpClient, f4s, t4s)
+  aggregate(httpClient, f4s, t4s, g4s)
 
 lazy val httpClient = (project in file("http-client")).
   settings(commonSettings: _*).
@@ -68,6 +75,16 @@ lazy val t4s = (project in file("twitter4s")).
     parallelExecution in Test := false,
     fork in run := false,
     libraryDependencies ++= t4sDeps).
+  settings(Format.settings) dependsOn httpClient
+
+lazy val g4s = (project in file("google4s")).
+  settings(commonSettings: _*).
+  settings(
+    name := "google4s",
+    publishArtifact in Test := false,
+    parallelExecution in Test := false,
+    fork in run := false,
+    libraryDependencies ++= g4sDeps).
   settings(Format.settings) dependsOn httpClient
 
 initialCommands in console :=
