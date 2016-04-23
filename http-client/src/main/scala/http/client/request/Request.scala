@@ -11,6 +11,8 @@ trait Request {
   val queryString: Map[String, Seq[String]]
   val completionEvaluator: CompletionEvaluation
   def isComplete(response: HttpResponse): Boolean = completionEvaluator(this, response)
+
+  // TODO: get rid of this toJson method, it's an artifact of Facebook
   def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String
 }
 
