@@ -14,14 +14,34 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues with Inside with Inspectors with BeforeAndAfterAll {
 
   val config = ConfigFactory.load("test.conf")
-  val _accessToken = config.getString("google4s.test.access-token")
+
   val _refreshToken = config.getString("google4s.test.refresh-token")
   val _clientId = config.getString("google4s.test.client-id")
   val _clientSecret = config.getString("google4s.test.client-secret")
+
   val _actorSystem = ActorSystem("google4s-test")
+
   val conn = new ThrottledHttpConnection {
     override val actorSystem = _actorSystem
     override val connection = new PlayWSHttpConnection
+  }
+
+  val _accessToken = {
+
+    val requestBuilder = new GoogleRequestBuilder(conn)
+
+    val accessTokenF = GoogleAccessToken
+      .fromRenewToken(requestBuilder)(_clientSecret, _clientId, _refreshToken, global)
+      .map { t ⇒
+        t.getOrElse {
+          println("No access token could be retrieved, expect failures.")
+          "NO_ACCESS_TOKEN"
+        }
+      }
+
+    val a = Await.result(accessTokenF, 5.seconds)
+    requestBuilder.shutdown()
+    a
   }
 
   override def afterAll(): Unit = {
@@ -78,10 +98,9 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
   it should "refresh expired access tokens via a refresh token" in {
 
     val requestBuilder = new GoogleRequestBuilder(conn)
-    val responseF = GoogleAccessToken.renew(requestBuilder)(_clientSecret, _clientId, _refreshToken, global)
+    val responseF = GoogleAccessToken.fromRenewToken(requestBuilder)(_clientSecret, _clientId, _refreshToken, global)
     val response = Await.result(responseF, 5.seconds)
 
-    println(s"response = ${response.body}")
-    assert(response.status.equals(200))
+    assert(response.isDefined)
   }
 }
