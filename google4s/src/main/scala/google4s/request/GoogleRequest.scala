@@ -16,7 +16,8 @@ case class GoogleRequest(
   customCompletionEvaluator: Option[CompletionEvaluation] = None)
     extends Request {
 
-  override val queryString = _queryString + ("access_token" → Seq(accessToken))
+  // TODO: make accessToken an option
+  override val queryString = if (accessToken.isEmpty) _queryString else _queryString + ("access_token" → Seq(accessToken))
   override def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = "{}"
 
   override val completionEvaluator = if (paginated) {

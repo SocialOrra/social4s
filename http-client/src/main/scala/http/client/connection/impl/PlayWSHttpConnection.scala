@@ -12,7 +12,7 @@ private[impl] case class PlayWsHttpResponse(status: Int, headers: Seq[HttpHeader
   override val statusText = response.statusText
   override val body = response.body
   override val bodyAsBytes = response.bodyAsBytes
-  override val json = response.json
+  override def json = response.json
 }
 
 private[impl] object PlayWsHttpResponse {

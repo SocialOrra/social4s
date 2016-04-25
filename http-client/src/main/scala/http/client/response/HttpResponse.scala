@@ -8,5 +8,5 @@ trait HttpResponse {
   val statusText: String
   val body: String
   val bodyAsBytes: Array[Byte]
-  val json: JsValue
+  def json: JsValue
 }
