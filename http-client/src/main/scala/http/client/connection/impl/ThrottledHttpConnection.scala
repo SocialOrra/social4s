@@ -23,7 +23,7 @@ trait ThrottledHttpConnection extends HttpConnection {
   protected val periodInSeconds: scala.Long = config.getLong("http.client.connection.throttled.period-in-seconds")
 
   protected val actorProps = Props(classOf[ThrottlingActor], numberOfRequests, TimeUnit.SECONDS, periodInSeconds)
-  lazy protected val actor = actorSystem.actorOf(actorProps, "throttling-actor")
+  lazy protected val actor = actorSystem.actorOf(actorProps)
 
   // TODO: make configurable
   protected val requestTimeoutDuration = 5.seconds

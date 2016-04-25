@@ -28,6 +28,11 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
 
   val _accessToken = {
 
+    val conn = new ThrottledHttpConnection {
+      override val actorSystem = _actorSystem
+      override val connection = new PlayWSHttpConnection
+    }
+
     val requestBuilder = new GoogleRequestBuilder(conn)
 
     val accessTokenF = GoogleAccessToken
@@ -39,7 +44,7 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
         }
       }
 
-    val a = Await.result(accessTokenF, 5.seconds)
+    val a = Await.result(accessTokenF, 10.seconds)
     requestBuilder.shutdown()
     a
   }
@@ -66,7 +71,7 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
 
     val requestBuilder = new GoogleRequestBuilder(conn)
     val responseF = requestBuilder.makeRequest(request)
-    val response = Await.result(responseF, 5.seconds)
+    val response = Await.result(responseF, 10.seconds)
 
     assert(response._2.head.status.equals(200))
     assert(response._2.size == 1)
@@ -89,7 +94,7 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
 
     val requestBuilder = new GoogleRequestBuilder(conn)
     val responseF = requestBuilder.makeRequest(request)
-    val response = Await.result(responseF, 5.seconds)
+    val response = Await.result(responseF, 10.seconds)
 
     assert(response._2.head.status.equals(200))
     assert(response._2.size > 1)
@@ -99,7 +104,7 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
 
     val requestBuilder = new GoogleRequestBuilder(conn)
     val responseF = GoogleAccessToken.fromRenewToken(requestBuilder)(_clientSecret, _clientId, _refreshToken, global)
-    val response = Await.result(responseF, 5.seconds)
+    val response = Await.result(responseF, 10.seconds)
 
     assert(response.isDefined)
   }
