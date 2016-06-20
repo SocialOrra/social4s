@@ -28,6 +28,20 @@ object FacebookMarketingApi extends FacebookApiHelpers {
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = true)
     }
 
+    def adAccountData(
+      adAccountId: String,
+      limit:       Option[Int]         = Some(DEFAULT_API_LIMIT),
+      accessToken: Option[AccessToken] = None) = {
+      val relativeUrl = buildRelativeUrl(s"act_$adAccountId")
+      val modifiers = buildModifiers(
+        "limit" → limit,
+        "fields" → Some("name,age,business,created_time,currency,timezone_name," +
+          "campaigns{objective,id,adlabels,recommendations,start_time,stop_time,updated_time,ads," +
+          "adsets{billing_event,bid_amount,bid_info,created_time,end_time,start_time,optimization_goal," +
+          "ads{id,conversion_specs,configured_status,tracking_specs,creative{id,thumbnail_url,object_type,object_story_spec},name,insights}}}"))
+      requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = true)
+    }
+
     def adCampaign(
       adCampaignId: String,
       accessToken:  Option[AccessToken] = None) = {
