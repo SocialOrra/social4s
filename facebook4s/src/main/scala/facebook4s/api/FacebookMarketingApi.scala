@@ -6,7 +6,7 @@ object FacebookMarketingApi extends FacebookApiHelpers {
 
   import FacebookApiConstants._
 
-  implicit class FacebookAdsInsightsApi(requestBuilder: FacebookBatchRequestBuilder) {
+  implicit class FacebookAdsInsightsApiImplicits(requestBuilder: FacebookBatchRequestBuilder) {
     def adInsights(
       adId:        String,
       metric:      Option[String]      = None,
