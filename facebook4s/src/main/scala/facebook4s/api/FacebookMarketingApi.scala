@@ -19,26 +19,24 @@ object FacebookMarketingApi extends FacebookApiHelpers {
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
     }
 
-    def adAccountCampaigns(
-      adAccountId: String,
-      limit:       Option[Int]         = Some(DEFAULT_API_LIMIT),
-      accessToken: Option[AccessToken] = None) = {
-      val relativeUrl = buildRelativeUrl(s"act_$adAccountId", "campaigns")
-      val modifiers = buildModifiers("limit" → limit)
-      requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = true)
-    }
 
-    def adAccountData(
+    def adAccount(
       adAccountId: String,
-      limit:       Option[Int]         = Some(DEFAULT_API_LIMIT),
       accessToken: Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl(s"act_$adAccountId")
       val modifiers = buildModifiers(
-        "limit" → limit,
-        "fields" → Some("name,age,business,created_time,currency,timezone_name," +
-          "campaigns{objective,id,adlabels,recommendations,start_time,stop_time,updated_time,ads," +
-          "adsets{billing_event,bid_amount,bid_info,created_time,end_time,start_time,optimization_goal," +
-          "ads{id,conversion_specs,configured_status,tracking_specs,creative{id,thumbnail_url,object_type,object_story_spec},name,insights}}}"))
+        "fields" → Some("name,age,business,created_time,currency,timezone_name"))
+      requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = true)
+    }
+
+    def adCampaigns(
+      adAccountId: String,
+      limit: Option[Int] = None,
+      accessToken: Option[AccessToken] = None) = {
+      val relativeUrl = buildRelativeUrl(s"act_$adAccountId/campaigns")
+      val modifiers = buildModifiers(
+        "limit" -> limit,
+        "fields" → Some("id,name,account_id,buying_type,adlabels,objective,start_time,stop_time"))
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = true)
     }
 

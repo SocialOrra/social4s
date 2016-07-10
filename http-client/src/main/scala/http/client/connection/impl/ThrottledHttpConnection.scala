@@ -48,6 +48,7 @@ case object Shutdown
 
 class ThrottlingActor(numRequests: Long, timeUnit: TimeUnit, period: Long) extends Actor with ActorLogging {
 
+  log.info(s"Throttling to $numRequests per $period ${timeUnit.toString}")
   protected val bucket = Buckets.withNanoTimePrecision()
     .withLimitedBandwidth(numRequests, timeUnit, period)
     .build()

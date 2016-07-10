@@ -2,11 +2,14 @@ package http.client.request
 
 import http.client.connection.HttpConnection
 import http.client.response.{BatchResponse, HttpResponse}
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart], BResponsePart <: HttpResponse, BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]](var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
+
+  protected var log = LoggerFactory.getLogger(getClass.getName)
 
   protected def makeBatchRequestBody(requests: Seq[Request]): Array[Byte]
   protected def makeBatchRequest(batchUrl: String, body: Array[Byte]): Request
@@ -103,8 +106,10 @@ abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart]
     val response = reqRes._2
 
     if (response.status == 200) {
+      log.info(s"Checking if request is complete: ${request.isComplete(reqRes._2)} for ${reqRes._1.relativeUrl}")
       request.isComplete(reqRes._2)
     } else {
+      log.info("Response status != 200, not checking if it's complete, simply returning true.")
       // error
       true
     }

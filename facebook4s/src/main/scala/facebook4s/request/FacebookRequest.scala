@@ -64,8 +64,11 @@ class JsonConditionCompletionEvaluation[T](jsonExtractor: JsonExtractor[T], chec
 
 object FacebookEmptyNextPageCompletionEvaluation extends CompletionEvaluation {
   override def apply(request: Request, response: HttpResponse): Boolean = {
-    val paging = (response.json \ "paging").validate[FacebookCursorPaging].get
-    paging.next.isEmpty
+    (response.json \ "paging").validate[FacebookCursorPaging].map { paging ⇒
+      paging.next.isEmpty
+    } getOrElse {
+      true
+    }
   }
 }
 
@@ -143,8 +146,8 @@ case class FacebookCursorPaginatedRequest(request: Request, paging: Option[Faceb
   override def originalRequest = copy(paging = None)
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ after)
   override def nextRequest(responsePart: HttpResponse): FacebookCursorPaginatedRequest = {
-    val paging = (responsePart.json \ "paging").validate[FacebookCursorPaging].get
-    copy(paging = Some(paging))
+    val paging = (responsePart.json \ "paging").validateOpt[FacebookCursorPaging]
+    copy(paging = paging.get)
   }
 }
 
