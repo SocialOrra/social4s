@@ -18,6 +18,7 @@ class TwitterAuthorizationHeaderGetRequestSpec extends FlatSpec with Matchers wi
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
   val request = TwitterTimelineRequest(
+    baseUrl = _baseUrl,
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = _method,
@@ -41,17 +42,17 @@ class TwitterAuthorizationHeaderGetRequestSpec extends FlatSpec with Matchers wi
     oauthConsumerSecret = oauthConsumerSecret,
     oauthTokenSecret = oauthTokenSecret,
     oauthNonce = oauthNonce,
-    oauthTimestamp = oauthTimestamp)(_, _)
+    oauthTimestamp = oauthTimestamp)(_)
 
   it should "create a valid signature base string for GETs" in {
-    val signatureBaseString = TwitterAuthorizationHeader.createSignatureBaseString(_baseUrl, request, _parameterString)
+    val signatureBaseString = TwitterAuthorizationHeader.createSignatureBaseString(request, _parameterString)
     assert(signatureBaseString.equals(expectedSignatureBaseString))
   }
 
   it should "create valid authorization headers for GETs " in {
-    val authHeader = twAuthHeaderGen(_baseUrl, request)
-    assert(authHeader._1.equals(expectedAuthHeaderName))
-    assert(authHeader._2.equals(expectedAuthHeaderValue))
+    val authHeader = twAuthHeaderGen(request)
+    assert(authHeader.name.equals(expectedAuthHeaderName))
+    assert(authHeader.value.equals(expectedAuthHeaderValue))
   }
 
   private def _parameterString = {

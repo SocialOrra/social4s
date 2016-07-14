@@ -6,6 +6,7 @@ import http.client.response.{HttpHeader, HttpResponse}
 import play.api.libs.json.JsSuccess
 
 case class GoogleRequest(
+  override val baseUrl:      String,
   override val relativeUrl:  String,
   override val method:       HttpMethod,
   override val headers:      Seq[HttpHeader]              = Seq.empty,

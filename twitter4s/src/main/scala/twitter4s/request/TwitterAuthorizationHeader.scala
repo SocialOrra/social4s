@@ -8,14 +8,21 @@ import javax.crypto.spec.SecretKeySpec
 import com.ning.http.util.Base64
 import http.client.method.PostMethod
 import http.client.request.Request
+import http.client.response.HttpHeader
 
 import scala.compat.Platform
+
+class TwitterAuthorizationHeader(override val name: String, override val value: String) extends HttpHeader(name, value)
 
 object TwitterAuthorizationHeader {
 
   private val ENCODING = "UTF-8"
   val oauthSignatureMethod = "HMAC-SHA1"
   val oauthVersion = "1.0"
+
+  def apply(name: String, value: String): TwitterAuthorizationHeader = {
+    new TwitterAuthorizationHeader(name, value)
+  }
 
   /** Generates a Twitter Authorization header according to:
    *  https://dev.twitter.com/oauth/overview/authorizing-requests
@@ -37,8 +44,7 @@ object TwitterAuthorizationHeader {
     oauthTokenSecret:    String,
     oauthNonce:          String = scala.util.Random.alphanumeric.take(16).mkString,
     oauthTimestamp:      String = (Platform.currentTime / 1000).toString)(
-    baseUrl: String,
-    request: Request): (String, String) = {
+    request: Request): TwitterAuthorizationHeader = {
 
     val fieldsWithoutSignature = createOauthFieldsWithoutSignature(
       oauthConsumerKey,
@@ -49,7 +55,7 @@ object TwitterAuthorizationHeader {
       oauthTimestamp)
 
     val fields = fieldsWithoutSignature ++
-      Map("oauth_signature" → oauthSignature(baseUrl, request, fieldsWithoutSignature, oauthConsumerSecret, oauthTokenSecret))
+      Map("oauth_signature" → oauthSignature(request, fieldsWithoutSignature, oauthConsumerSecret, oauthTokenSecret))
 
     val encodedFields = fields
       .toSeq
@@ -57,7 +63,7 @@ object TwitterAuthorizationHeader {
       .sortBy(_._1)
       .map(kv ⇒ { percentEncode(kv._1).getOrElse(s"INVALID_KEY_${kv._1}") + "=\"" + percentEncode(kv._2).getOrElse(s"INVALID_VALUE_${kv._2}") + "\"" })
 
-    val oauthHeader = "Authorization" → s"OAuth ${encodedFields.mkString(", ")}"
+    val oauthHeader = TwitterAuthorizationHeader("Authorization", s"OAuth ${encodedFields.mkString(", ")}")
 
     oauthHeader
   }
@@ -137,9 +143,9 @@ object TwitterAuthorizationHeader {
       .mkString("&")
   }
 
-  private[twitter4s] def createSignatureBaseString(baseUrl: String, request: Request, parameterString: String): String = {
+  private[twitter4s] def createSignatureBaseString(request: Request, parameterString: String): String = {
     val method = request.method.name.toUpperCase
-    val url = percentEncode(s"$baseUrl${request.relativeUrl}").getOrElse("INVALID_URL")
+    val url = percentEncode(s"${request.baseUrl}${request.relativeUrl}").getOrElse("INVALID_URL")
     val pString = percentEncode(parameterString).getOrElse("INVALID_PARAMETER_STRING")
 
     val signatureBaseString = method + "&" + url + "&" + pString
@@ -161,9 +167,9 @@ object TwitterAuthorizationHeader {
     percentEncode(oauthConsumerSecret).getOrElse("INVALID_CONSUMER_SECRET") + "&" + percentEncode(oauthTokenSecret).getOrElse("INVALID_TOKEN_SECRET")
   }
 
-  private def oauthSignature(baseUrl: String, request: Request, oauthFields: Map[String, String], oauthConsumerSecret: String, oauthTokenSecret: String): String = {
+  private def oauthSignature(request: Request, oauthFields: Map[String, String], oauthConsumerSecret: String, oauthTokenSecret: String): String = {
     val parameterString = createParameterString(request, oauthFields)
-    val signatureBaseString = createSignatureBaseString(baseUrl, request, parameterString)
+    val signatureBaseString = createSignatureBaseString(request, parameterString)
     val signingKey = createSigningKey(oauthConsumerSecret, oauthTokenSecret)
     val oauthSignatureString = hmac(signingKey, signatureBaseString)
 

@@ -4,6 +4,7 @@ import http.client.method.HttpMethod
 import http.client.response.{HttpHeader, HttpResponse}
 
 trait Request {
+  val baseUrl: String
   val method: HttpMethod
   val headers: Seq[HttpHeader]
   val body: Option[Array[Byte]]

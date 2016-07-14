@@ -1,8 +1,9 @@
 package facebook4s.api
 
-import facebook4s.request.{FacebookGetRequest, FacebookBatchRequestBuilder}
+import facebook4s.request.{FacebookBatchRequestBuilder, FacebookGetRequest}
+import http.client.request.HttpRequestHelpers
 
-object FacebookGraphApi extends FacebookApiHelpers {
+object FacebookGraphApi extends HttpRequestHelpers {
 
   import FacebookApiConstants._
 

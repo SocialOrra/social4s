@@ -13,7 +13,8 @@ object GoogleAccessTokenRenewResult {
 
 object GoogleAccessToken {
 
-  val tokenUrl = "https://accounts.google.com/o/oauth2/token"
+  val tokenBaseUrl = "https://accounts.google.com"
+  val tokenRelativeUrl = "/o/oauth2/token"
 
   // TODO: document and remove hardcoded urls and strings
   def fromRenewToken(requestBuilder: GoogleRequestBuilder)(implicit clientSecret: String, clientId: String, refreshToken: String, ec: ExecutionContext): Future[Option[String]] = {
@@ -27,7 +28,8 @@ object GoogleAccessToken {
       .mkString("&")
 
     val request = new GoogleRequest(
-      relativeUrl = tokenUrl,
+      baseUrl = tokenBaseUrl,
+      relativeUrl = tokenRelativeUrl,
       method = PostMethod,
       headers = Seq(HttpHeader("content-type", "application/x-www-form-urlencoded")),
       accessToken = "",

@@ -22,6 +22,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
   val _body = "status=Hello Ladies + Gentlemen, a signed OAuth request!"
 
   val request = TwitterTimelineRequest(
+    baseUrl = _baseUrl,
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = PostMethod,
@@ -48,7 +49,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
     oauthConsumerSecret = oauthConsumerSecret,
     oauthTokenSecret = oauthTokenSecret,
     oauthNonce = oauthNonce,
-    oauthTimestamp = oauthTimestamp)(_, _)
+    oauthTimestamp = oauthTimestamp)(_)
 
   private def _parameterString = {
     val fieldsWithoutSignature = TwitterAuthorizationHeader.createOauthFieldsWithoutSignature(
@@ -67,7 +68,7 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
   }
 
   it should "create a valid signature base string for POSTs" in {
-    val signatureBaseString = TwitterAuthorizationHeader.createSignatureBaseString(_baseUrl, request, _parameterString)
+    val signatureBaseString = TwitterAuthorizationHeader.createSignatureBaseString(request, _parameterString)
     assert(signatureBaseString.equals(expectedSignatureBaseString))
   }
 
@@ -77,8 +78,8 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
   }
 
   it should "create valid authorization headers for POSTs " in {
-    val authHeader = twAuthHeaderGen(_baseUrl, request)
-    assert(authHeader._1.equals(expectedAuthHeaderName))
-    assert(authHeader._2.equals(expectedAuthHeaderValue))
+    val authHeader = twAuthHeaderGen(request)
+    assert(authHeader.name.equals(expectedAuthHeaderName))
+    assert(authHeader.value.equals(expectedAuthHeaderValue))
   }
 }

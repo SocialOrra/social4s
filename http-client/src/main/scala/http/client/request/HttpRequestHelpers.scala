@@ -1,6 +1,6 @@
-package facebook4s.api
+package http.client.request
 
-trait FacebookApiHelpers {
+trait HttpRequestHelpers {
 
   /** Converts a sequence of key/value pairs into a map of key to sequence of values if and
    *  only if the value is defined (not None).

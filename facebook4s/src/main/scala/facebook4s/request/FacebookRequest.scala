@@ -93,6 +93,7 @@ object FacebookRequest {
 
 case class FacebookGetRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[HttpHeader], override val queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], override val method: HttpMethod = GetMethod)
     extends Request {
+  override val baseUrl: String = ""
   override val completionEvaluator = TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
@@ -103,6 +104,7 @@ case class FacebookGetRequest(override val relativeUrl: String, override val bod
 
 case class FacebookPostRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[HttpHeader], override val queryString: Map[String, Seq[String]], data: Option[AccessToken], override val method: HttpMethod = PostMethod)
     extends Request {
+  override val baseUrl: String = ""
   override val completionEvaluator = TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
     JsObject(Seq(
@@ -124,6 +126,7 @@ case class FacebookTimeRangedRequest(since: Long, until: Long, request: Request,
   override val method = request.method
   override val headers = request.headers
   override val body = request.body
+  override val baseUrl = request.baseUrl
   override val relativeUrl = request.relativeUrl
   override val queryString = request.queryString ++ sinceUntil
   override def originalRequest = copy(currentSince = None, currentUntil = None)
@@ -142,6 +145,7 @@ case class FacebookCursorPaginatedRequest(request: Request, paging: Option[Faceb
   override val headers = request.headers
   override val body = request.body
   override val relativeUrl = request.relativeUrl
+  override val baseUrl = request.baseUrl
   override val queryString = request.queryString ++ after
   override def originalRequest = copy(paging = None)
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = request.toJson(extraQueryStringParams ++ after)

@@ -1,11 +1,12 @@
 package twitter4s.request
 
 import http.client.method.HttpMethod
-import http.client.request.{CompletionEvaluation, OrElseCompletionEvaluation, TrueCompletionEvaluation}
+import http.client.request.{CompletionEvaluation, OrElseCompletionEvaluation, Request, TrueCompletionEvaluation}
 import http.client.response.{HttpHeader, HttpResponse}
 import twitter4s.response.TwitterEmptyNextCursorCompletionEvaluation
 
 case class TwitterCursoredRequest(
+  baseUrl:     String,
   relativeUrl: String,
   headers:     Seq[HttpHeader],
   queryString: Map[String, Seq[String]],
@@ -21,9 +22,15 @@ case class TwitterCursoredRequest(
     }
   } else TrueCompletionEvaluation
 
-  override def nextRequest(response: HttpResponse): TwitterRequest = {
+  override def nextRequest(response: HttpResponse)(implicit authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): TwitterRequest = {
     val next = (response.json \ "next_cursor").validate[Long].get
     val newQS = queryString + ("cursor" → Seq(next.toString))
-    copy(queryString = newQS)
+    val requestWithnewQS = copy(queryString = newQS)
+    requestWithnewQS.copy(
+      headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS)(authHeaderGen))
+  }
+
+  override protected def withoutHeader(httpHeaderName: String): TwitterRequest = {
+    copy(headers = headers.filterNot(_.name == httpHeaderName))
   }
 }

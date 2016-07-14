@@ -57,7 +57,8 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
   "GoogleRequestBuilder" should "properly make non-paginated requests" in {
 
     val request = new GoogleRequest(
-      relativeUrl = "https://www.googleapis.com/analytics/v3/data/ga",
+      baseUrl = "https://www.googleapis.com/analytics/v3",
+      relativeUrl = "/data/ga",
       method = GetMethod,
       accessToken = _accessToken,
       paginated = false,
@@ -80,7 +81,8 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
   it should "properly paginate through requests until the end" in {
 
     val request = new GoogleRequest(
-      relativeUrl = "https://www.googleapis.com/analytics/v3/data/ga",
+      baseUrl = "https://www.googleapis.com/analytics/v3",
+      relativeUrl = "/data/ga",
       method = GetMethod,
       accessToken = _accessToken,
       paginated = true,

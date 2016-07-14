@@ -79,7 +79,8 @@ class FacebookBatchRequestBuilder(cfg: FacebookConnectionInformation, connection
       val queryString = Map.empty[String, Seq[String]]
       val body = Some(_body)
       val headers = _headers
-      val relativeUrl = batchUrl
+      val baseUrl = batchUrl
+      val relativeUrl = "" // No need to use one since these are batch requests
       def toJson(extraQueryStringParams: Map[String, Seq[String]]): String = ""
     }
   }

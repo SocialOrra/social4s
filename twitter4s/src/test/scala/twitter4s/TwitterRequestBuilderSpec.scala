@@ -1,6 +1,7 @@
 package twitter4s
 
 import akka.actor.ActorSystem
+
 import com.typesafe.config.ConfigFactory
 import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnection}
 import http.client.method.GetMethod
@@ -10,6 +11,7 @@ import twitter4s.request.{TwitterAuthorizationHeader, TwitterCursoredRequest, Tw
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues with Inside with Inspectors {
 
@@ -17,9 +19,10 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
   val _baseUrl = config.getString("twitter4s.test.base-url")
   val _relativeUrl = config.getString("twitter4s.test.relative-url")
   val _headers = Seq.empty[HttpHeader]
-  val _queryString = Map("screen_name" → Seq("codewarrior"))
+  val _queryString = Map("screen_name" → Seq("codewarrior"), "max_id" → Seq("848502337"))
 
   val request = TwitterTimelineRequest(
+    baseUrl = _baseUrl,
     relativeUrl = _relativeUrl,
     headers = _headers,
     method = GetMethod,
@@ -32,19 +35,18 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
   val oauthToken = config.getString("twitter4s.test.oauth-token")
   val oauthTokenSecret = config.getString("twitter4s.test.oauth-token-secret")
 
-  val twAuthHeaderGen = TwitterAuthorizationHeader.generate(
+  implicit val twAuthHeaderGen = TwitterAuthorizationHeader.generate(
     oauthConsumerKey = oauthConsumerKey,
     oauthToken = oauthToken,
     oauthConsumerSecret = oauthConsumerSecret,
-    oauthTokenSecret = oauthTokenSecret)(_, _)
+    oauthTokenSecret = oauthTokenSecret)(_)
 
   "TwitterRequestBuilder" should "properly fetch a user's timeline" in {
 
-    val authHeader = HttpHeader.from(twAuthHeaderGen(_baseUrl, request))
+    val authHeader = twAuthHeaderGen(request)
 
     val authRequest = request.copy(
-      headers = _headers ++ Seq(authHeader),
-      relativeUrl = _baseUrl + _relativeUrl)
+      headers = _headers ++ Seq(authHeader))
 
     val conn = new ThrottledHttpConnection {
       override val actorSystem = ActorSystem("twitter4s-test")
@@ -61,9 +63,10 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
   "TwitterRequestBuilder" should "properly fetch a user's followers and follow cursors" in {
 
     val _relativeUrl = "/1.1/followers/ids.json"
-    val _queryString = Map("screen_name" → Seq("theSeanCook"))
+    val _queryString = Map("screen_name" → Seq("theSeanCook"), "count" → Seq("5000"))
 
     val request = TwitterCursoredRequest(
+      baseUrl = _baseUrl,
       relativeUrl = _relativeUrl,
       headers = _headers,
       method = GetMethod,
@@ -71,11 +74,10 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
       body = None,
       paginated = true)
 
-    val authHeader = HttpHeader.from(twAuthHeaderGen(_baseUrl, request))
+    val authHeader = twAuthHeaderGen(request)
 
     val authRequest = request.copy(
-      headers = _headers ++ Seq(authHeader),
-      relativeUrl = _baseUrl + _relativeUrl)
+      headers = _headers ++ Seq(authHeader))
 
     val conn = new ThrottledHttpConnection {
       override val actorSystem = ActorSystem("twitter4s-test")

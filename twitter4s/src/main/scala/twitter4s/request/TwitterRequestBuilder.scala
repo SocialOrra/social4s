@@ -1,21 +1,19 @@
 package twitter4s.request
 
 import http.client.connection.HttpConnection
-import http.client.request.Request
 import http.client.response.HttpResponse
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 class TwitterRequestBuilder(connection: HttpConnection) {
 
   def shutdown() = connection.shutdown()
 
-  def makeRequest[R <: TwitterRequest](request: TwitterRequest): Future[(Request, Seq[HttpResponse])] = {
+  def makeRequest[R <: TwitterRequest](request: TwitterRequest)(implicit ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): Future[(TwitterRequest, Seq[HttpResponse])] = {
     executeWithPagination(request)
   }
 
-  def executeWithPagination[R <: TwitterRequest](request: TwitterRequest)(implicit ec: ExecutionContext): Future[(Request, Seq[HttpResponse])] = {
+  def executeWithPagination[R <: TwitterRequest](request: TwitterRequest)(implicit ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): Future[(TwitterRequest, Seq[HttpResponse])] = {
     val f = _executeWithPagination(request) map { requestAndResponseParts ⇒
       // TODO: could there be no parts?
       val request = requestAndResponseParts._1
@@ -29,7 +27,8 @@ class TwitterRequestBuilder(connection: HttpConnection) {
     request:                TwitterRequest,
     completedResponseParts: Seq[HttpResponse] = Seq.empty)(
     implicit
-    ec: ExecutionContext): Future[(TwitterRequest, Seq[HttpResponse])] = {
+    ec:            ExecutionContext,
+    authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): Future[(TwitterRequest, Seq[HttpResponse])] = {
 
     val responseF = connection.makeRequest(request)
 
@@ -59,7 +58,7 @@ class TwitterRequestBuilder(connection: HttpConnection) {
     }
   }
 
-  protected def newRequestFromIncompleteRequest[R <: TwitterRequest](request: TwitterRequest, response: HttpResponse): TwitterRequest = {
+  protected def newRequestFromIncompleteRequest[R <: TwitterRequest](request: TwitterRequest, response: HttpResponse)(implicit authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): TwitterRequest = {
     request.nextRequest(response)
   }
 }

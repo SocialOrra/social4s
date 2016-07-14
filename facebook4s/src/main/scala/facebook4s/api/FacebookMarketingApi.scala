@@ -1,8 +1,9 @@
 package facebook4s.api
 
-import facebook4s.request.{FacebookGetRequest, FacebookBatchRequestBuilder}
+import facebook4s.request.{FacebookBatchRequestBuilder, FacebookGetRequest}
+import http.client.request.HttpRequestHelpers
 
-object FacebookMarketingApi extends FacebookApiHelpers {
+object FacebookMarketingApi extends HttpRequestHelpers {
 
   import FacebookApiConstants._
 
@@ -19,7 +20,6 @@ object FacebookMarketingApi extends FacebookApiHelpers {
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
     }
 
-
     def adAccount(
       adAccountId: String,
       accessToken: Option[AccessToken] = None) = {
@@ -31,11 +31,11 @@ object FacebookMarketingApi extends FacebookApiHelpers {
 
     def adCampaigns(
       adAccountId: String,
-      limit: Option[Int] = None,
+      limit:       Option[Int]         = None,
       accessToken: Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl(s"act_$adAccountId/campaigns")
       val modifiers = buildModifiers(
-        "limit" -> limit,
+        "limit" → limit,
         "fields" → Some("id,name,account_id,buying_type,adlabels,objective,start_time,stop_time"))
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = true)
     }
