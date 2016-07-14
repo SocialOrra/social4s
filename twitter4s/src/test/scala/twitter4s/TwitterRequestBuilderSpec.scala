@@ -55,7 +55,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     val requestBuilder = new TwitterRequestBuilder(conn)
     val respF = requestBuilder.makeRequest(authRequest)
     val resp = Await.result(respF, 30.seconds)
-    assert(resp._2.head.status.equals(200))
+    assert(resp._2.forall(_.status.equals(200)))
     assert(resp._2.head.json.toString().contains("created_at"))
     assert(resp._2.size > 1)
   }
@@ -87,7 +87,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     val requestBuilder = new TwitterRequestBuilder(conn)
     val respF = requestBuilder.makeRequest(authRequest)
     val resp = Await.result(respF, 30.seconds)
-    assert(resp._2.head.status.equals(200))
+    assert(resp._2.forall(_.status.equals(200)))
     assert(resp._2.size > 1)
   }
 }
