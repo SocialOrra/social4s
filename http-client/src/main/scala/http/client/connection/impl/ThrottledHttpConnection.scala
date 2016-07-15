@@ -29,10 +29,22 @@ trait ThrottledHttpConnection extends HttpConnection {
   protected val requestTimeoutDuration = 5.seconds
   protected val shutdownTimeoutDuration = 20.seconds
 
+  /** This can be overridden in order to throttle subsequent requestes based on the response
+   *  of the last made request.
+   */
+  protected def throttleNextRequest(request: Request, response: HttpResponse): Boolean = false
+
   override def makeRequest(request: Request)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     implicit val timeout = new Timeout(requestTimeoutDuration)
     actor ask Throttled(request) flatMap { _ ⇒
       connection.makeRequest(request)
+    } map { response ⇒
+
+      // if this response forces us to slow down, we send a throttling message
+      // so that the next request will be throttled
+      if (throttleNextRequest(request, response)) actor ! ThrottleImmediately
+
+      response
     }
   }
 
@@ -44,6 +56,7 @@ trait ThrottledHttpConnection extends HttpConnection {
   }
 }
 case class Throttled(request: Request)
+case object ThrottleImmediately
 case object Shutdown
 
 class ThrottlingActor(numRequests: Long, timeUnit: TimeUnit, period: Long) extends Actor with ActorLogging {
@@ -60,6 +73,11 @@ class ThrottlingActor(numRequests: Long, timeUnit: TimeUnit, period: Long) exten
       bucket.consume(1)
       log.debug("Throttling completed.")
       sender ! t
+    case t @ ThrottleImmediately ⇒
+      log.debug("Being asked to throttle immediately.")
+      bucket.consumeAsMuchAsPossible()
+      sender ! t
+
     case Shutdown ⇒
       log.info(s"Shutting down ${getClass.getName}")
       sender ! Shutdown
