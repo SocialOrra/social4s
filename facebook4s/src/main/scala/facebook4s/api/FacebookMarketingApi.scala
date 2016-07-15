@@ -33,7 +33,7 @@ object FacebookMarketingApi extends HttpRequestHelpers {
       adAccountId: String,
       limit:       Option[Int]         = None,
       accessToken: Option[AccessToken] = None) = {
-      val relativeUrl = buildRelativeUrl(s"act_$adAccountId/campaigns")
+      val relativeUrl = buildRelativeUrl(s"v2.6/act_$adAccountId/campaigns")
       val modifiers = buildModifiers(
         "limit" → limit,
         "fields" → Some("id,name,account_id,buying_type,adlabels,objective,start_time,stop_time"))
