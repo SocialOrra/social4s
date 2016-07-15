@@ -24,15 +24,19 @@ import com.typesafe.config.ConfigFactory
 val config = ConfigFactory.load()
 val accessTokenStr = config.getString("facebook4s.console.access-token")
 val accessTokenOpt = Some(AccessToken(accessTokenStr, 0L))
+val system = ActorSystem("facebook4s-console")
 
 lazy val cfg: FacebookConnectionInformation = FacebookConnectionInformation()
 
 val connection = new ThrottledHttpConnection {
-  override val actorSystem = ActorSystem("facebook4s-console")
+  override val actorSystem = system
   override val connection = new PlayWSHttpConnection
 }
 
 val requestBuilder = new FacebookBatchRequestBuilder(cfg, connection, accessTokenOpt)
 
-// requestBuilder.shutdown()
+sys.addShutdownHook {
+  requestBuilder.shutdown()
+  system.shutdown()
+}
 
