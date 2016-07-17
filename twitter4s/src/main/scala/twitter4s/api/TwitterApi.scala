@@ -1,7 +1,7 @@
 package twitter4s.api
 
 import http.client.method.GetMethod
-import http.client.request.{HttpRequestHelpers, Request}
+import http.client.request.{HttpRequestHelpers, HttpRequest}
 import twitter4s.request._
 
 import scala.concurrent.ExecutionContext

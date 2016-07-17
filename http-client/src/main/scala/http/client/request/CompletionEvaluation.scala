@@ -2,8 +2,8 @@ package http.client.request
 
 import http.client.response.HttpResponse
 
-trait CompletionEvaluation extends ((Request, HttpResponse) ⇒ Boolean)
+trait CompletionEvaluation extends ((HttpRequest, HttpResponse) ⇒ Boolean)
 
 object TrueCompletionEvaluation extends CompletionEvaluation {
-  override def apply(request: Request, response: HttpResponse): Boolean = true
+  override def apply(request: HttpRequest, response: HttpResponse): Boolean = true
 }

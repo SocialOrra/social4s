@@ -1,9 +1,9 @@
 package twitter4s.request
 
-import http.client.request.Request
+import http.client.request.HttpRequest
 import http.client.response.{HttpHeader, HttpResponse}
 
-abstract class TwitterRequest extends Request {
+abstract class TwitterRequest extends HttpRequest {
 
   val paginated: Boolean
 

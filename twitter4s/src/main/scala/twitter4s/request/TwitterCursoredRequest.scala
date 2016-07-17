@@ -1,7 +1,7 @@
 package twitter4s.request
 
 import http.client.method.HttpMethod
-import http.client.request.{CompletionEvaluation, OrElseCompletionEvaluation, Request, TrueCompletionEvaluation}
+import http.client.request.{CompletionEvaluation, OrElseCompletionEvaluation, HttpRequest, TrueCompletionEvaluation}
 import http.client.response.{HttpHeader, HttpResponse}
 import twitter4s.response.TwitterEmptyNextCursorCompletionEvaluation
 

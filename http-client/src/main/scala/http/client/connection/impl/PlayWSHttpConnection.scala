@@ -1,7 +1,7 @@
 package http.client.connection.impl
 
 import http.client.connection.HttpConnection
-import http.client.request.Request
+import http.client.request.HttpRequest
 import http.client.response.{HttpHeader, HttpResponse}
 import play.api.libs.ws.WSResponse
 import play.api.libs.ws.ning.NingWSClient
@@ -36,7 +36,7 @@ class PlayWSHttpConnection extends HttpConnection {
 
   override def shutdown() = client.close()
 
-  override def makeRequest(request: Request)(implicit ec: ExecutionContext): Future[HttpResponse] = {
+  override def makeRequest(request: HttpRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
 
     val r = client
       .url(request.baseUrl + request.relativeUrl)

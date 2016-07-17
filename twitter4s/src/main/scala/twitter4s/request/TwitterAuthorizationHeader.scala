@@ -7,7 +7,7 @@ import javax.crypto.spec.SecretKeySpec
 
 import com.ning.http.util.Base64
 import http.client.method.PostMethod
-import http.client.request.Request
+import http.client.request.HttpRequest
 import http.client.response.HttpHeader
 
 import scala.compat.Platform
@@ -44,7 +44,7 @@ object TwitterAuthorizationHeader {
     oauthTokenSecret:    String,
     oauthNonce:          String = scala.util.Random.alphanumeric.take(16).mkString,
     oauthTimestamp:      String = (Platform.currentTime / 1000).toString)(
-    request: Request): TwitterAuthorizationHeader = {
+    request: HttpRequest): TwitterAuthorizationHeader = {
 
     val fieldsWithoutSignature = createOauthFieldsWithoutSignature(
       oauthConsumerKey,
@@ -104,7 +104,7 @@ object TwitterAuthorizationHeader {
       keyAndValues._2.map(value ⇒ (key, value)).toList
     }).toSeq
 
-  private def createBodyParams(request: Request): Seq[(String, String)] = {
+  private def createBodyParams(request: HttpRequest): Seq[(String, String)] = {
     // TODO: clean this up, really ugly
     if (request.method.equals(PostMethod)) {
 
@@ -128,7 +128,7 @@ object TwitterAuthorizationHeader {
     } else { Seq.empty }
   }
 
-  private[twitter4s] def createParameterString(request: Request, oauthFields: Map[String, String]): String = {
+  private[twitter4s] def createParameterString(request: HttpRequest, oauthFields: Map[String, String]): String = {
 
     val bodyParams = createBodyParams(request)
 
@@ -143,7 +143,7 @@ object TwitterAuthorizationHeader {
       .mkString("&")
   }
 
-  private[twitter4s] def createSignatureBaseString(request: Request, parameterString: String): String = {
+  private[twitter4s] def createSignatureBaseString(request: HttpRequest, parameterString: String): String = {
     val method = request.method.name.toUpperCase
     val url = percentEncode(s"${request.baseUrl}${request.relativeUrl}").getOrElse("INVALID_URL")
     val pString = percentEncode(parameterString).getOrElse("INVALID_PARAMETER_STRING")
@@ -167,7 +167,7 @@ object TwitterAuthorizationHeader {
     percentEncode(oauthConsumerSecret).getOrElse("INVALID_CONSUMER_SECRET") + "&" + percentEncode(oauthTokenSecret).getOrElse("INVALID_TOKEN_SECRET")
   }
 
-  private def oauthSignature(request: Request, oauthFields: Map[String, String], oauthConsumerSecret: String, oauthTokenSecret: String): String = {
+  private def oauthSignature(request: HttpRequest, oauthFields: Map[String, String], oauthConsumerSecret: String, oauthTokenSecret: String): String = {
     val parameterString = createParameterString(request, oauthFields)
     val signatureBaseString = createSignatureBaseString(request, parameterString)
     val signingKey = createSigningKey(oauthConsumerSecret, oauthTokenSecret)

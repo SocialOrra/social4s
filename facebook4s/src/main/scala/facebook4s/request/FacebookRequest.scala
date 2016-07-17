@@ -8,7 +8,7 @@ import http.client.response.{HttpHeader, HttpResponse}
 import play.api.libs.json._
 
 object TimeRangeCompletionEvaluation extends CompletionEvaluation {
-  override def apply(request: Request, response: HttpResponse): Boolean = {
+  override def apply(request: HttpRequest, response: HttpResponse): Boolean = {
     request.asInstanceOf[FacebookTimeRangedRequest].currentUntil.exists(_ >= request.asInstanceOf[FacebookTimeRangedRequest].until)
   }
 }
@@ -58,12 +58,12 @@ object JsonConditions {
 }
 
 class JsonConditionCompletionEvaluation[T](jsonExtractor: JsonExtractor[T], checker: ConditionChecker[T], completionConditionValue: T) extends CompletionEvaluation {
-  override def apply(request: Request, response: HttpResponse): Boolean =
+  override def apply(request: HttpRequest, response: HttpResponse): Boolean =
     jsonExtractor.apply(response.json, checker).apply(completionConditionValue)
 }
 
 object FacebookEmptyNextPageCompletionEvaluation extends CompletionEvaluation {
-  override def apply(request: Request, response: HttpResponse): Boolean = {
+  override def apply(request: HttpRequest, response: HttpResponse): Boolean = {
     (response.json \ "paging").validate[FacebookCursorPaging].map { paging ⇒
       paging.next.isEmpty
     } getOrElse {
@@ -92,7 +92,7 @@ object FacebookRequest {
 }
 
 case class FacebookGetRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[HttpHeader], override val queryString: Map[String, Seq[String]], accessToken: Option[AccessToken], override val method: HttpMethod = GetMethod)
-    extends Request {
+    extends HttpRequest {
   override val baseUrl: String = ""
   override val completionEvaluator = TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
@@ -103,7 +103,7 @@ case class FacebookGetRequest(override val relativeUrl: String, override val bod
 }
 
 case class FacebookPostRequest(override val relativeUrl: String, override val body: Option[Array[Byte]] = None, override val headers: Seq[HttpHeader], override val queryString: Map[String, Seq[String]], data: Option[AccessToken], override val method: HttpMethod = PostMethod)
-    extends Request {
+    extends HttpRequest {
   override val baseUrl: String = ""
   override val completionEvaluator = TrueCompletionEvaluation
   override def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String = {
@@ -115,12 +115,12 @@ case class FacebookPostRequest(override val relativeUrl: String, override val bo
   }
 }
 
-trait FacebookPaginatedRequest extends Request {
-  def originalRequest: Request
+trait FacebookPaginatedRequest extends HttpRequest {
+  def originalRequest: HttpRequest
   def nextRequest(responsePart: HttpResponse): FacebookPaginatedRequest
 }
 
-case class FacebookTimeRangedRequest(since: Long, until: Long, request: Request, currentSince: Option[Long] = None, currentUntil: Option[Long] = None)
+case class FacebookTimeRangedRequest(since: Long, until: Long, request: HttpRequest, currentSince: Option[Long] = None, currentUntil: Option[Long] = None)
     extends FacebookPaginatedRequest {
   protected lazy val sinceUntil = Map("since" → Seq(currentSince.getOrElse(since).toString), "until" → Seq(currentUntil.getOrElse(until).toString))
   override val method = request.method
@@ -138,7 +138,7 @@ case class FacebookTimeRangedRequest(since: Long, until: Long, request: Request,
   }
 }
 
-case class FacebookCursorPaginatedRequest(request: Request, paging: Option[FacebookCursorPaging] = None, completionEvaluator: CompletionEvaluation = FacebookEmptyNextPageCompletionEvaluation)
+case class FacebookCursorPaginatedRequest(request: HttpRequest, paging: Option[FacebookCursorPaging] = None, completionEvaluator: CompletionEvaluation = FacebookEmptyNextPageCompletionEvaluation)
     extends FacebookPaginatedRequest {
   protected lazy val after = paging.map(p ⇒ Map("after" → Seq(p.cursors.after))).getOrElse(Map.empty)
   override val method = request.method

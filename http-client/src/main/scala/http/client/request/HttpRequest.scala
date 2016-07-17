@@ -3,7 +3,7 @@ package http.client.request
 import http.client.method.HttpMethod
 import http.client.response.{HttpHeader, HttpResponse}
 
-trait Request {
+trait HttpRequest {
   val baseUrl: String
   val method: HttpMethod
   val headers: Seq[HttpHeader]
@@ -15,5 +15,9 @@ trait Request {
 
   // TODO: get rid of this toJson method, it's an artifact of Facebook
   def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String
+}
+
+trait PaginatedHttpRequest extends HttpRequest {
+  def nextRequest[R <: PaginatedHttpRequest](response: HttpResponse): R
 }
 

@@ -10,7 +10,7 @@ import akka.util.Timeout
 import com.github.bucket4j.Buckets
 import com.typesafe.config.ConfigFactory
 import http.client.connection.HttpConnection
-import http.client.request.Request
+import http.client.request.HttpRequest
 import http.client.response.HttpResponse
 
 trait ThrottledHttpConnection extends HttpConnection {
@@ -32,9 +32,9 @@ trait ThrottledHttpConnection extends HttpConnection {
   /** This can be overridden in order to throttle subsequent requestes based on the response
    *  of the last made request.
    */
-  protected def throttleNextRequest(request: Request, response: HttpResponse): Boolean = false
+  protected def throttleNextRequest(request: HttpRequest, response: HttpResponse): Boolean = false
 
-  override def makeRequest(request: Request)(implicit ec: ExecutionContext): Future[HttpResponse] = {
+  override def makeRequest(request: HttpRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     implicit val timeout = new Timeout(requestTimeoutDuration)
     actor ask Throttled(request) flatMap { _ ⇒
       connection.makeRequest(request)
@@ -55,7 +55,7 @@ trait ThrottledHttpConnection extends HttpConnection {
     connection.shutdown()
   }
 }
-case class Throttled(request: Request)
+case class Throttled(request: HttpRequest)
 case object ThrottleImmediately
 case object Shutdown
 

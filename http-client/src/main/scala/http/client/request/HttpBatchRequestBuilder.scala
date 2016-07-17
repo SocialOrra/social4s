@@ -8,21 +8,21 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpBatchRequestCallback[BResponsePart] {
-  def apply(completedRequests: Seq[(Request, BResponsePart)]): Future[Boolean]
+  def apply(completedRequests: Seq[(HttpRequest, BResponsePart)]): Future[Boolean]
 }
 
 class HttpBatchRequestAccumulatorCallback[T] extends HttpBatchRequestCallback[T] {
 
-  var completedRequests: ListBuffer[(Request, T)] = ListBuffer()
+  var completedRequests: ListBuffer[(HttpRequest, T)] = ListBuffer()
 
-  def apply(completedRequest: Seq[(Request, T)]): Future[Boolean] = Future.successful {
+  def apply(completedRequest: Seq[(HttpRequest, T)]): Future[Boolean] = Future.successful {
     completedRequests ++= completedRequest
     true
   }
 }
 
 object HttpBatchRequestBuilder {
-  def mergeResponseParts[BResponsePart <: HttpResponse](requestsAndResponses: Seq[(Request, BResponsePart)])(implicit ec: ExecutionContext): Map[Request, Seq[BResponsePart]] = {
+  def mergeResponseParts[BResponsePart <: HttpResponse](requestsAndResponses: Seq[(HttpRequest, BResponsePart)])(implicit ec: ExecutionContext): Map[HttpRequest, Seq[BResponsePart]] = {
     requestsAndResponses
       // group response parts by request
       .groupBy(_._1)
@@ -39,24 +39,24 @@ object HttpBatchRequestBuilder {
   }
 }
 
-abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart], BResponsePart <: HttpResponse, BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]](var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
+abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart], BResponsePart <: HttpResponse, BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]](var requests: ListBuffer[HttpRequest] = ListBuffer.empty[HttpRequest], connection: HttpConnection, batchUrl: String) {
 
   protected var log = LoggerFactory.getLogger(getClass.getName)
 
-  protected def makeBatchRequestBody(requests: Seq[Request]): Array[Byte]
-  protected def makeBatchRequest(batchUrl: String, body: Array[Byte]): Request
+  protected def makeBatchRequestBody(requests: Seq[HttpRequest]): Array[Byte]
+  protected def makeBatchRequest(batchUrl: String, body: Array[Byte]): HttpRequest
   protected def fromHttpResponse(response: HttpResponse): BResponse
-  protected def accumulateCompleteRequest(reqRes: (Request, BResponsePart)): (Request, BResponsePart)
-  protected def newRequestFromIncompleteRequest(reqRes: (Request, BResponsePart)): Request
-  protected def maybePaginated(paginated: Boolean, request: Request): Request
-  protected def maybeRanged(since: Option[Long], until: Option[Long], request: Request): Request
+  protected def accumulateCompleteRequest(reqRes: (HttpRequest, BResponsePart)): (HttpRequest, BResponsePart)
+  protected def newRequestFromIncompleteRequest(reqRes: (HttpRequest, BResponsePart)): HttpRequest
+  protected def maybePaginated(paginated: Boolean, request: HttpRequest): HttpRequest
+  protected def maybeRanged(since: Option[Long], until: Option[Long], request: HttpRequest): HttpRequest
 
   def shutdown() = connection.shutdown()
 
-  def add(request: Request, since: Option[Long], until: Option[Long]): Unit =
+  def add(request: HttpRequest, since: Option[Long], until: Option[Long]): Unit =
     batch(maybeRanged(since, until, request))
 
-  def add(request: Request, paginated: Boolean): Unit =
+  def add(request: HttpRequest, paginated: Boolean): Unit =
     batch(maybePaginated(paginated, request))
 
   def execute(implicit ec: ExecutionContext): Future[BResponse] = {
@@ -82,7 +82,7 @@ abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart]
     requests = ListBuffer.empty
   }
 
-  private def _executeWithPagination(requests: Seq[Request], partCompletionCallback: HttpBatchRequestCallback[BResponsePart])(implicit ec: ExecutionContext): Future[Boolean] = {
+  private def _executeWithPagination(requests: Seq[HttpRequest], partCompletionCallback: HttpBatchRequestCallback[BResponsePart])(implicit ec: ExecutionContext): Future[Boolean] = {
 
     val body = makeBatchRequestBody(requests)
     val postRequest = makeBatchRequest(batchUrl, body)
@@ -120,7 +120,7 @@ abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart]
     }
   }
 
-  private def isRequestComplete(reqRes: (Request, BResponsePart)): Boolean = {
+  private def isRequestComplete(reqRes: (HttpRequest, BResponsePart)): Boolean = {
     val request = reqRes._1
     val response = reqRes._2
 
@@ -134,7 +134,7 @@ abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart]
     }
   }
 
-  private def batch(request: Request): Unit = {
+  private def batch(request: HttpRequest): Unit = {
     requests += request
   }
 }
