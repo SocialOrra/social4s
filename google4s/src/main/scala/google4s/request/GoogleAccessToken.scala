@@ -36,12 +36,13 @@ object GoogleAccessToken {
       body = Some(bodyParams.getBytes("utf-8")),
       paginated = false)
 
-    requestBuilder.makeRequest(request) map {
-      case (req, response) if response.size == 1 && response.head.status == 200 ⇒
-        response.head.json.validate[GoogleAccessTokenRenewResult] match {
+    val acc = new GoogleBatchRequestAccumulatorCallback
+    requestBuilder.makeRequest(request, acc) map {
+      case true if acc.completedRequests.size == 1 && acc.completedRequests.head.status == 200 ⇒
+        acc.completedRequests.head.json.validate[GoogleAccessTokenRenewResult] match {
           case s: JsSuccess[GoogleAccessTokenRenewResult] ⇒ Some(s.get.access_token)
           case x ⇒
-            println(s"Error renewing access token for clientId=$clientId\nresponse=$response\nbody=${response.headOption.map(_.body)}\nerror=$x")
+            println(s"Error renewing access token for clientId=$clientId\nresponse=${acc.completedRequests}\nbody=${acc.completedRequests.headOption.map(_.body)}\nerror=$x")
             None
         }
     }

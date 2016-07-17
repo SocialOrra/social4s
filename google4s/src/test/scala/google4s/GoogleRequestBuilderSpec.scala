@@ -2,7 +2,7 @@ package google4s
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import google4s.request.{GoogleAccessToken, GoogleRequest, GoogleRequestBuilder}
+import google4s.request.{GoogleAccessToken, GoogleBatchRequestAccumulatorCallback, GoogleRequest, GoogleRequestBuilder}
 import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnection}
 import http.client.method.GetMethod
 import org.scalatest._
@@ -71,11 +71,13 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
         "max-results" → Seq("1")))
 
     val requestBuilder = new GoogleRequestBuilder(conn)
-    val responseF = requestBuilder.makeRequest(request)
+    val acc = new GoogleBatchRequestAccumulatorCallback
+    val responseF = requestBuilder.makeRequest(request, acc)
     val response = Await.result(responseF, 10.seconds)
 
-    assert(response._2.head.status.equals(200))
-    assert(response._2.size == 1)
+    assert(response)
+    assert(acc.completedRequests.head.status.equals(200))
+    assert(acc.completedRequests.size == 1)
   }
 
   it should "properly paginate through requests until the end" in {
@@ -95,11 +97,13 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
         "max-results" → Seq("1")))
 
     val requestBuilder = new GoogleRequestBuilder(conn)
-    val responseF = requestBuilder.makeRequest(request)
+    val acc = new GoogleBatchRequestAccumulatorCallback
+    val responseF = requestBuilder.makeRequest(request, acc)
     val response = Await.result(responseF, 10.seconds)
 
-    assert(response._2.head.status.equals(200))
-    assert(response._2.size > 1)
+    assert(response)
+    assert(acc.completedRequests.head.status.equals(200))
+    assert(acc.completedRequests.size > 1)
   }
 
   it should "refresh expired access tokens via a refresh token" in {
