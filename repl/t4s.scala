@@ -1,9 +1,11 @@
 import akka.actor.ActorSystem
+
 import com.typesafe.config.ConfigFactory
 import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnection}
 import http.client.method.GetMethod
-import http.client.response.HttpHeader
-import twitter4s.request.{TwitterAuthorizationHeader, TwitterCursoredRequest, TwitterRequestBuilder, TwitterTimelineRequest}
+import http.client.response._
+import http.client.request._
+import twitter4s.request._
 import twitter4s.api._
 import twitter4s.api.TwitterApi._
 
@@ -30,3 +32,4 @@ val conn = new ThrottledHttpConnection {
 
 val requestBuilder = new TwitterRequestBuilder(conn)
 
+implicit val acc = new TwitterBatchRequestAccumulatorCallback

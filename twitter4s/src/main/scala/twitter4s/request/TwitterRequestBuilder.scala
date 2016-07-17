@@ -2,33 +2,46 @@ package twitter4s.request
 
 import http.client.connection.HttpConnection
 import http.client.response.HttpResponse
+import org.slf4j.LoggerFactory
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
+
+trait TwitterRequestBuilderCallback {
+  def apply(completedRequest: HttpResponse): Future[Boolean]
+}
+
+class TwitterBatchRequestAccumulatorCallback extends TwitterRequestBuilderCallback {
+
+  var completedRequests: ListBuffer[HttpResponse] = ListBuffer()
+
+  def apply(completedRequest: HttpResponse): Future[Boolean] = Future.successful {
+    completedRequests += completedRequest
+    true
+  }
+}
 
 class TwitterRequestBuilder(connection: HttpConnection) {
 
+  protected var log = LoggerFactory.getLogger(getClass.getName)
+
   def shutdown() = connection.shutdown()
 
-  def makeRequest[R <: TwitterRequest](request: TwitterRequest)(implicit ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): Future[(TwitterRequest, Seq[HttpResponse])] = {
-    executeWithPagination(request)
+  def makeRequest[R <: TwitterRequest](request: TwitterRequest, partCompletionCallback: TwitterRequestBuilderCallback)(implicit ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): Future[Boolean] = {
+    executeWithPagination(request, partCompletionCallback)
   }
 
-  def executeWithPagination[R <: TwitterRequest](request: TwitterRequest)(implicit ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): Future[(TwitterRequest, Seq[HttpResponse])] = {
-    val f = _executeWithPagination(request) map { requestAndResponseParts ⇒
-      // TODO: could there be no parts?
-      val request = requestAndResponseParts._1
-      val parts = requestAndResponseParts._2
-      (request, parts)
-    }
-    f
+  protected def executeWithPagination[R <: TwitterRequest](request: TwitterRequest, partCompletionCallback: TwitterRequestBuilderCallback)(implicit ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): Future[Boolean] = {
+    _executeWithPagination(request, partCompletionCallback)
   }
 
   private def _executeWithPagination[R <: TwitterRequest](
     request:                TwitterRequest,
-    completedResponseParts: Seq[HttpResponse] = Seq.empty)(
+    partCompletionCallback: TwitterRequestBuilderCallback,
+    completedResponseParts: Seq[HttpResponse]             = Seq.empty)(
     implicit
     ec:            ExecutionContext,
-    authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): Future[(TwitterRequest, Seq[HttpResponse])] = {
+    authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): Future[Boolean] = {
 
     val responseF = connection.makeRequest(request)
 
@@ -42,9 +55,17 @@ class TwitterRequestBuilder(connection: HttpConnection) {
 
     } flatMap {
       case (responsePart, Some(newRequest)) ⇒
-        _executeWithPagination(newRequest, completedResponseParts ++ Seq(responsePart))
+        partCompletionCallback(responsePart) flatMap {
+          case true ⇒
+            log.debug(s"Successfully called preCompletionCallback ${partCompletionCallback.getClass.getName} on response part.")
+            _executeWithPagination(newRequest, partCompletionCallback, completedResponseParts ++ Seq(responsePart))
+          case _ ⇒
+            log.debug(s"Failed calling preCompletionCallback ${partCompletionCallback.getClass.getName} on parts, aborting.")
+            Future.successful { false }
+        }
+
       case (responsePart, None) ⇒
-        Future.successful { (request, completedResponseParts ++ Seq(responsePart)) }
+        partCompletionCallback(responsePart)
     }
   }
 

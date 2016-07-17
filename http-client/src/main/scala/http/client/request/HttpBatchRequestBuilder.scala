@@ -21,6 +21,24 @@ class HttpBatchRequestAccumulatorCallback[T] extends HttpBatchRequestCallback[T]
   }
 }
 
+object HttpBatchRequestBuilder {
+  def mergeResponseParts[BResponsePart <: HttpResponse](requestsAndResponses: Seq[(Request, BResponsePart)])(implicit ec: ExecutionContext): Map[Request, Seq[BResponsePart]] = {
+    requestsAndResponses
+      // group response parts by request
+      .groupBy(_._1)
+      // remove grouping key, leave (request,responseParts)
+      .mapValues(_.map(_._2))
+      .map { requestAndResponseParts ⇒
+        // TODO: could there be no parts?
+        val request = requestAndResponseParts._1
+        val parts = requestAndResponseParts._2
+        //val combinedBody: String = parts.map(p ⇒ p.bodyJson.validate[JsObject].get).foldLeft(JsObject(Seq.empty))(_ deepMerge _).toString()
+        //val combinedPart = HttpResponse(code = parts.head.code, headers = parts.head.headers, body = combinedBody)
+        (request, parts)
+      }
+  }
+}
+
 abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart], BResponsePart <: HttpResponse, BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]](var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
 
   protected var log = LoggerFactory.getLogger(getClass.getName)
@@ -59,28 +77,6 @@ abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart]
     postExecute()
     f
   }
-
-  // TODO: move this into a util
-  //def executeWithPagination(implicit ec: ExecutionContext): Future[Map[Request, Seq[BResponsePart]]] = {
-  //  val f = _executeWithPagination(requests) map { requestsAndResponses ⇒
-  //    requestsAndResponses
-  //      // group response parts by request
-  //      .groupBy(_._1)
-  //      // remove grouping key, leave (request,responseParts)
-  //      .mapValues(_.map(_._2))
-  //      .map { requestAndResponseParts ⇒
-  //        // TODO: could there be no parts?
-  //        val request = requestAndResponseParts._1
-  //        val parts = requestAndResponseParts._2
-  //        //val combinedBody: String = parts.map(p ⇒ p.bodyJson.validate[JsObject].get).foldLeft(JsObject(Seq.empty))(_ deepMerge _).toString()
-  //        //val combinedPart = HttpResponse(code = parts.head.code, headers = parts.head.headers, body = combinedBody)
-  //        (request, parts)
-  //      }
-  //  }
-  //
-  //  postExecute()
-  //  f
-  //}
 
   private def postExecute(): Unit = {
     requests = ListBuffer.empty

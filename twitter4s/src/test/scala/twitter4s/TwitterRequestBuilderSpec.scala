@@ -1,13 +1,12 @@
 package twitter4s
 
 import akka.actor.ActorSystem
-
 import com.typesafe.config.ConfigFactory
 import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnection}
 import http.client.method.GetMethod
 import http.client.response.HttpHeader
 import org.scalatest._
-import twitter4s.request.{TwitterAuthorizationHeader, TwitterCursoredRequest, TwitterRequestBuilder, TwitterTimelineRequest}
+import twitter4s.request._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -53,11 +52,13 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
       override val connection = new PlayWSHttpConnection
     }
     val requestBuilder = new TwitterRequestBuilder(conn)
-    val respF = requestBuilder.makeRequest(authRequest)
+    val acc = new TwitterBatchRequestAccumulatorCallback
+    val respF = requestBuilder.makeRequest(authRequest, acc)
     val resp = Await.result(respF, 30.seconds)
-    assert(resp._2.forall(_.status.equals(200)))
-    assert(resp._2.head.json.toString().contains("created_at"))
-    assert(resp._2.size > 1)
+    assert(resp)
+    assert(acc.completedRequests.forall(_.status == 200))
+    assert(acc.completedRequests.head.json.toString().contains("created_at"))
+    assert(acc.completedRequests.size > 1)
   }
 
   "TwitterRequestBuilder" should "properly fetch a user's followers and follow cursors" in {
@@ -85,9 +86,11 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     }
 
     val requestBuilder = new TwitterRequestBuilder(conn)
-    val respF = requestBuilder.makeRequest(authRequest)
+    val acc = new TwitterBatchRequestAccumulatorCallback
+    val respF = requestBuilder.makeRequest(authRequest, acc)
     val resp = Await.result(respF, 30.seconds)
-    assert(resp._2.forall(_.status.equals(200)))
-    assert(resp._2.size > 1)
+    assert(resp)
+    assert(acc.completedRequests.forall(_.status == 200))
+    assert(acc.completedRequests.size > 1)
   }
 }
