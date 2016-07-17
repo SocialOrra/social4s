@@ -19,15 +19,6 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
   val _headers = Seq.empty[HttpHeader]
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = TwitterTimelineRequest(
-    baseUrl = _baseUrl,
-    relativeUrl = _relativeUrl,
-    headers = _headers,
-    method = GetMethod,
-    queryString = _queryString,
-    body = None,
-    paginated = false)
-
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
   val oauthConsumerKey = config.getString("twitter4s.test.oauth-consumer-key")
   val oauthToken = config.getString("twitter4s.test.oauth-token")
@@ -38,6 +29,16 @@ class TwitterRequestSpec extends FlatSpec with Matchers with OptionValues with I
     oauthToken = oauthToken,
     oauthConsumerSecret = oauthConsumerSecret,
     oauthTokenSecret = oauthTokenSecret)(_)
+
+  val request = TwitterTimelineRequest(
+    baseUrl = _baseUrl,
+    relativeUrl = _relativeUrl,
+    headers = _headers,
+    method = GetMethod,
+    queryString = _queryString,
+    body = None,
+    paginated = false,
+    authHeaderGen = twAuthHeaderGen)
 
   "Twitter request" should "properly fetch a user's timeline" in {
 

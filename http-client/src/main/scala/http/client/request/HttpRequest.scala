@@ -17,7 +17,7 @@ trait HttpRequest {
   def toJson(extraQueryStringParams: Map[String, Seq[String]] = Map.empty): String
 }
 
-trait PaginatedHttpRequest extends HttpRequest {
-  def nextRequest[R <: PaginatedHttpRequest](response: HttpResponse): R
+trait PaginatedHttpRequest[_] extends HttpRequest {
+  def nextRequest(response: HttpResponse): PaginatedHttpRequest[_]
 }
 

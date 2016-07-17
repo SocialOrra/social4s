@@ -12,7 +12,8 @@ case class TwitterCursoredRequest(
   queryString: Map[String, Seq[String]],
   body:        Option[Array[Byte]],
   method:      HttpMethod, paginated: Boolean,
-  customCompletionEvaluator: Option[CompletionEvaluation] = None)
+  authHeaderGen:             (TwitterRequest) ⇒ TwitterAuthorizationHeader,
+  customCompletionEvaluator: Option[CompletionEvaluation]                  = None)
     extends TwitterRequest {
 
   override val completionEvaluator = if (paginated) {
@@ -22,12 +23,12 @@ case class TwitterCursoredRequest(
     }
   } else TrueCompletionEvaluation
 
-  override def nextRequest(response: HttpResponse)(implicit authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): TwitterRequest = {
+  override def nextRequest(response: HttpResponse): TwitterRequest = {
     val next = (response.json \ "next_cursor").validate[Long].get
     val newQS = queryString + ("cursor" → Seq(next.toString))
     val requestWithnewQS = copy(queryString = newQS)
     requestWithnewQS.copy(
-      headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS)(authHeaderGen))
+      headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS))
   }
 
   override protected def withoutHeader(httpHeaderName: String): TwitterRequest = {

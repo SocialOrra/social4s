@@ -1,7 +1,7 @@
 package google4s.request
 
 import http.client.method.HttpMethod
-import http.client.request.{CompletionEvaluation, OrElseCompletionEvaluation, HttpRequest, TrueCompletionEvaluation}
+import http.client.request._
 import http.client.response.{HttpHeader, HttpResponse}
 import play.api.libs.json.JsSuccess
 
@@ -15,7 +15,7 @@ case class GoogleRequest(
   accessToken:               String,
   paginated:                 Boolean                      = false,
   customCompletionEvaluator: Option[CompletionEvaluation] = None)
-    extends HttpRequest {
+    extends PaginatedHttpRequest[GoogleRequest] {
 
   // TODO: make accessToken an option
   override val queryString = if (accessToken.isEmpty) _queryString else _queryString + ("access_token" → Seq(accessToken))
@@ -28,7 +28,7 @@ case class GoogleRequest(
     }
   } else TrueCompletionEvaluation
 
-  def nextRequest(response: HttpResponse): GoogleRequest = {
+  override def nextRequest(response: HttpResponse): GoogleRequest = {
     (response.json \ "nextLink").validate[String] match {
       case s: JsSuccess[String] ⇒
         copy(relativeUrl = s.get)

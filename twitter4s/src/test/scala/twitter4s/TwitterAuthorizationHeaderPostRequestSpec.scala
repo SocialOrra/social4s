@@ -21,15 +21,6 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
   val _queryString = Map("include_entities" → Seq("true"))
   val _body = "status=Hello Ladies + Gentlemen, a signed OAuth request!"
 
-  val request = TwitterTimelineRequest(
-    baseUrl = _baseUrl,
-    relativeUrl = _relativeUrl,
-    headers = _headers,
-    method = PostMethod,
-    queryString = _queryString,
-    body = Some(_body.getBytes("utf-8")),
-    paginated = false)
-
   val oauthConsumerSecret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw"
   val oauthConsumerKey = "xvz1evFS4wEEPTGEFPHBog"
   val oauthToken = "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb"
@@ -50,6 +41,16 @@ class TwitterAuthorizationHeaderPostRequestSpec extends FlatSpec with Matchers w
     oauthTokenSecret = oauthTokenSecret,
     oauthNonce = oauthNonce,
     oauthTimestamp = oauthTimestamp)(_)
+
+  val request = TwitterTimelineRequest(
+    baseUrl = _baseUrl,
+    relativeUrl = _relativeUrl,
+    headers = _headers,
+    method = PostMethod,
+    queryString = _queryString,
+    body = Some(_body.getBytes("utf-8")),
+    paginated = false,
+    authHeaderGen = twAuthHeaderGen)
 
   private def _parameterString = {
     val fieldsWithoutSignature = TwitterAuthorizationHeader.createOauthFieldsWithoutSignature(

@@ -17,15 +17,6 @@ class TwitterAuthorizationHeaderGetRequestSpec extends FlatSpec with Matchers wi
   // TODO: fetch from config
   val _queryString = Map("screen_name" → Seq("codewarrior"))
 
-  val request = TwitterTimelineRequest(
-    baseUrl = _baseUrl,
-    relativeUrl = _relativeUrl,
-    headers = _headers,
-    method = _method,
-    queryString = _queryString,
-    body = None,
-    paginated = false)
-
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
   val oauthConsumerKey = config.getString("twitter4s.test.oauth-consumer-key")
   val oauthToken = config.getString("twitter4s.test.oauth-token")
@@ -43,6 +34,16 @@ class TwitterAuthorizationHeaderGetRequestSpec extends FlatSpec with Matchers wi
     oauthTokenSecret = oauthTokenSecret,
     oauthNonce = oauthNonce,
     oauthTimestamp = oauthTimestamp)(_)
+
+  val request = TwitterTimelineRequest(
+    baseUrl = _baseUrl,
+    relativeUrl = _relativeUrl,
+    headers = _headers,
+    method = _method,
+    queryString = _queryString,
+    body = None,
+    paginated = false,
+    authHeaderGen = twAuthHeaderGen)
 
   it should "create a valid signature base string for GETs" in {
     val signatureBaseString = TwitterAuthorizationHeader.createSignatureBaseString(request, _parameterString)

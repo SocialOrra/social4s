@@ -1,6 +1,7 @@
 package google4s.request
 
 import http.client.method.PostMethod
+import http.client.request.{HttpRequestAccumulatorCallback, HttpRequestBuilderCallback}
 import http.client.response.HttpHeader
 import play.api.libs.json.{JsSuccess, Json}
 
@@ -36,15 +37,13 @@ object GoogleAccessToken {
       body = Some(bodyParams.getBytes("utf-8")),
       paginated = false)
 
-    val acc = new GoogleBatchRequestAccumulatorCallback
-    requestBuilder.makeRequest(request, acc) map {
-      case true if acc.completedRequests.size == 1 && acc.completedRequests.head.status == 200 ⇒
-        acc.completedRequests.head.json.validate[GoogleAccessTokenRenewResult] match {
-          case s: JsSuccess[GoogleAccessTokenRenewResult] ⇒ Some(s.get.access_token)
-          case x ⇒
-            println(s"Error renewing access token for clientId=$clientId\nresponse=${acc.completedRequests}\nbody=${acc.completedRequests.headOption.map(_.body)}\nerror=$x")
-            None
-        }
+    requestBuilder.makeRequest(request) map { response ⇒
+      response.json.validate[GoogleAccessTokenRenewResult] match {
+        case s: JsSuccess[GoogleAccessTokenRenewResult] ⇒ Some(s.get.access_token)
+        case x ⇒
+          println(s"Error renewing access token for clientId=$clientId\nresponse=$response\nbody=${response.body}\nerror=$x")
+          None
+      }
     }
   }
 }

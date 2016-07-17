@@ -1,7 +1,7 @@
 package twitter4s.api
 
 import http.client.method.GetMethod
-import http.client.request.{HttpRequestHelpers, HttpRequest}
+import http.client.request.{HttpRequestBuilderCallback, HttpRequestHelpers}
 import twitter4s.request._
 
 import scala.concurrent.ExecutionContext
@@ -13,7 +13,7 @@ object TwitterApi extends HttpRequestHelpers {
 
   implicit class TwitterApiImplicits(requestBuilder: TwitterRequestBuilder) {
 
-    def userTimeline(screenName: String, maxId: Option[Long] = None)(implicit partCompletionCallback: TwitterRequestBuilderCallback, ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader) = {
+    def userTimeline(screenName: String, maxId: Option[Long] = None)(implicit partCompletionCallback: HttpRequestBuilderCallback, ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader) = {
 
       val queryString = Map("screen_name" → Seq(screenName))
       val relativeUrl = buildRelativeUrl("/", apiVersionUrl, "/statuses/user_timeline.json")
@@ -26,7 +26,8 @@ object TwitterApi extends HttpRequestHelpers {
         method = GetMethod,
         queryString = queryString,
         body = None,
-        paginated = true)
+        paginated = true,
+        authHeaderGen = authHeaderGen)
 
       val authHeader = authHeaderGen(request)
 

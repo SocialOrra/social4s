@@ -27,20 +27,20 @@ class HttpRequestBuilder(connection: HttpConnection) {
 
   def shutdown() = connection.shutdown()
 
-  def makeRequest[R <: HttpRequest](request: HttpRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
+  def makeRequest[R <: HttpRequest](request: R)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     connection.makeRequest(request)
   }
 
-  def makeRequest[R <: PaginatedHttpRequest](request: R, partCompletionCallback: HttpRequestBuilderCallback)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def makeRequest(request: PaginatedHttpRequest[_], partCompletionCallback: HttpRequestBuilderCallback)(implicit ec: ExecutionContext): Future[Boolean] = {
     executeWithPagination(request, partCompletionCallback)
   }
 
-  protected def executeWithPagination[R <: PaginatedHttpRequest](request: R, partCompletionCallback: HttpRequestBuilderCallback)(implicit ec: ExecutionContext): Future[Boolean] = {
+  protected def executeWithPagination(request: PaginatedHttpRequest[_], partCompletionCallback: HttpRequestBuilderCallback)(implicit ec: ExecutionContext): Future[Boolean] = {
     _executeWithPagination(request, partCompletionCallback)
   }
 
-  private def _executeWithPagination[R <: PaginatedHttpRequest](
-    request:                R,
+  private def _executeWithPagination(
+    request:                PaginatedHttpRequest[_],
     partCompletionCallback: HttpRequestBuilderCallback,
     completedResponseParts: Seq[HttpResponse]          = Seq.empty)(
     implicit
@@ -72,7 +72,7 @@ class HttpRequestBuilder(connection: HttpConnection) {
     }
   }
 
-  private def isRequestComplete[R <: PaginatedHttpRequest](request: R, response: HttpResponse): Boolean = {
+  private def isRequestComplete(request: PaginatedHttpRequest[_], response: HttpResponse): Boolean = {
 
     if (response.status == 200) {
       request.isComplete(response)
@@ -82,7 +82,7 @@ class HttpRequestBuilder(connection: HttpConnection) {
     }
   }
 
-  protected def newRequestFromIncompleteRequest[R <: PaginatedHttpRequest](request: R, response: HttpResponse): R = {
+  protected def newRequestFromIncompleteRequest(request: PaginatedHttpRequest[_], response: HttpResponse): PaginatedHttpRequest[_] = {
     request.nextRequest(response)
   }
 }

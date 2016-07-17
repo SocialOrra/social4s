@@ -1,7 +1,7 @@
 package twitter4s.request
 
 import http.client.method.HttpMethod
-import http.client.request.{CompletionEvaluation, OrElseCompletionEvaluation, HttpRequest, TrueCompletionEvaluation}
+import http.client.request.{CompletionEvaluation, OrElseCompletionEvaluation, TrueCompletionEvaluation}
 import http.client.response.{HttpHeader, HttpResponse}
 import play.api.libs.json.{JsSuccess, Json}
 import twitter4s.response.TwitterEmptyResponseBodyCompletionEvaluation
@@ -19,7 +19,8 @@ case class TwitterTimelineRequest(
   body:                      Option[Array[Byte]],
   method:                    HttpMethod,
   paginated:                 Boolean,
-  customCompletionEvaluator: Option[CompletionEvaluation] = None)
+  authHeaderGen:             (TwitterRequest) ⇒ TwitterAuthorizationHeader,
+  customCompletionEvaluator: Option[CompletionEvaluation]                  = None)
     extends TwitterRequest {
 
   override val completionEvaluator = if (paginated) {
@@ -29,7 +30,7 @@ case class TwitterTimelineRequest(
     }
   } else TrueCompletionEvaluation
 
-  override def nextRequest(response: HttpResponse)(implicit authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader): TwitterRequest = {
+  override def nextRequest(response: HttpResponse): TwitterRequest = {
     // take last item in data, take it's ID, subtract 1 from it, and set it as max_id.
     response.json.validate[Array[TwitterTimelineRequest.DataId]] match {
       case s: JsSuccess[Array[TwitterTimelineRequest.DataId]] ⇒
@@ -40,7 +41,7 @@ case class TwitterTimelineRequest(
         val newQS = queryString + ("max_id" → Seq((s.get.last.id - 1).toString))
         val requestWithnewQS = copy(queryString = newQS)
         requestWithnewQS.copy(
-          headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS)(authHeaderGen))
+          headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS))
 
       case _ ⇒
         // TODO: how do we handle this case?
@@ -48,7 +49,7 @@ case class TwitterTimelineRequest(
         val newQS = queryString + ("max_id" → Seq(0.toString))
         val requestWithnewQS = copy(queryString = newQS)
         requestWithnewQS.copy(
-          headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS)(authHeaderGen))
+          headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS))
     }
   }
 

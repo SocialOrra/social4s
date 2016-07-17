@@ -1,9 +1,11 @@
 package twitter4s
 
 import akka.actor.ActorSystem
+
 import com.typesafe.config.ConfigFactory
 import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnection}
 import http.client.method.GetMethod
+import http.client.request.HttpRequestAccumulatorCallback
 import http.client.response.HttpHeader
 import org.scalatest._
 import twitter4s.request._
@@ -20,15 +22,6 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
   val _headers = Seq.empty[HttpHeader]
   val _queryString = Map("screen_name" → Seq("codewarrior"), "max_id" → Seq("848502337"))
 
-  val request = TwitterTimelineRequest(
-    baseUrl = _baseUrl,
-    relativeUrl = _relativeUrl,
-    headers = _headers,
-    method = GetMethod,
-    queryString = _queryString,
-    body = None,
-    paginated = true)
-
   val oauthConsumerSecret = config.getString("twitter4s.test.oauth-consumer-secret")
   val oauthConsumerKey = config.getString("twitter4s.test.oauth-consumer-key")
   val oauthToken = config.getString("twitter4s.test.oauth-token")
@@ -39,6 +32,16 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     oauthToken = oauthToken,
     oauthConsumerSecret = oauthConsumerSecret,
     oauthTokenSecret = oauthTokenSecret)(_)
+
+  val request = TwitterTimelineRequest(
+    baseUrl = _baseUrl,
+    relativeUrl = _relativeUrl,
+    headers = _headers,
+    method = GetMethod,
+    queryString = _queryString,
+    body = None,
+    paginated = true,
+    authHeaderGen = twAuthHeaderGen)
 
   "TwitterRequestBuilder" should "properly fetch a user's timeline" in {
 
@@ -52,7 +55,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
       override val connection = new PlayWSHttpConnection
     }
     val requestBuilder = new TwitterRequestBuilder(conn)
-    val acc = new TwitterBatchRequestAccumulatorCallback
+    val acc = new HttpRequestAccumulatorCallback
     val respF = requestBuilder.makeRequest(authRequest, acc)
     val resp = Await.result(respF, 30.seconds)
     assert(resp)
@@ -73,7 +76,8 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
       method = GetMethod,
       queryString = _queryString,
       body = None,
-      paginated = true)
+      paginated = true,
+      authHeaderGen = twAuthHeaderGen)
 
     val authHeader = twAuthHeaderGen(request)
 
@@ -86,7 +90,7 @@ class TwitterRequestBuilderSpec extends FlatSpec with Matchers with OptionValues
     }
 
     val requestBuilder = new TwitterRequestBuilder(conn)
-    val acc = new TwitterBatchRequestAccumulatorCallback
+    val acc = new HttpRequestAccumulatorCallback
     val respF = requestBuilder.makeRequest(authRequest, acc)
     val resp = Await.result(respF, 30.seconds)
     assert(resp)

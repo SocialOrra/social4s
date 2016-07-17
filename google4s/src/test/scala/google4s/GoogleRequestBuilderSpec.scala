@@ -2,9 +2,10 @@ package google4s
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import google4s.request.{GoogleAccessToken, GoogleBatchRequestAccumulatorCallback, GoogleRequest, GoogleRequestBuilder}
+import google4s.request.{GoogleAccessToken, GoogleRequest, GoogleRequestBuilder}
 import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnection}
 import http.client.method.GetMethod
+import http.client.request.HttpRequestAccumulatorCallback
 import org.scalatest._
 
 import scala.concurrent.Await
@@ -71,7 +72,7 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
         "max-results" → Seq("1")))
 
     val requestBuilder = new GoogleRequestBuilder(conn)
-    val acc = new GoogleBatchRequestAccumulatorCallback
+    val acc = new HttpRequestAccumulatorCallback
     val responseF = requestBuilder.makeRequest(request, acc)
     val response = Await.result(responseF, 10.seconds)
 
@@ -97,7 +98,7 @@ class GoogleRequestBuilderSpec extends FlatSpec with Matchers with OptionValues 
         "max-results" → Seq("1")))
 
     val requestBuilder = new GoogleRequestBuilder(conn)
-    val acc = new GoogleBatchRequestAccumulatorCallback
+    val acc = new HttpRequestAccumulatorCallback
     val responseF = requestBuilder.makeRequest(request, acc)
     val response = Await.result(responseF, 10.seconds)
 
