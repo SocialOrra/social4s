@@ -3,7 +3,7 @@ import akka.actor.ActorSystem
 import facebook4s.api.{ AccessToken, FacebookMarketingApi }
 import facebook4s.connection.FacebookConnectionInformation
 import facebook4s.request.{ FacebookBatchRequestBuilder, FacebookGetRequest }
-import facebook4s.response.FacebookTimePaging
+import facebook4s.response.{FacebookBatchResponsePart, FacebookTimePaging}
 import facebook4s.api._
 import facebook4s.api.FacebookMarketingApi
 import facebook4s.api.FacebookMarketingApi._
@@ -11,6 +11,7 @@ import facebook4s.api.FacebookGraphApi
 import facebook4s.api.FacebookGraphApi._
 
 import http.client.connection.impl.{ PlayWSHttpConnection, ThrottledHttpConnection }
+import http.client.request._
 
 import play.api.libs.json.{ JsArray, Json }
 

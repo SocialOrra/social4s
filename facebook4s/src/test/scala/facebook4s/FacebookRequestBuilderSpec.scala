@@ -5,7 +5,7 @@ import facebook4s.api.AccessToken
 import facebook4s.api.FacebookMarketingApi._
 import facebook4s.connection.FacebookConnectionInformation
 import facebook4s.request.{FacebookBatchRequestBuilder, FacebookGetRequest}
-import facebook4s.response.FacebookTimePaging
+import facebook4s.response.{FacebookBatchResponsePart, FacebookTimePaging}
 import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnection}
 import play.api.GlobalSettings
 import play.api.libs.json.{JsArray, Json}
@@ -18,6 +18,7 @@ import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 import com.typesafe.config.ConfigFactory
+import http.client.request.HttpBatchRequestAccumulatorCallback
 import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.play._
 
@@ -155,15 +156,20 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
     val requestBuilder = new FacebookBatchRequestBuilder(cfg, connection, accessTokenOpt)
     requests.foreach { r ⇒ requestBuilder.adInsights(r._1, since = r._2, until = r._3) }
-    val future = requestBuilder.executeWithPaginationWithoutMerging
+    val acc = new HttpBatchRequestAccumulatorCallback[FacebookBatchResponsePart]
+    val future = requestBuilder.executeWithPagination(acc)
     val response = Await.result(future, 10.seconds)
+
+    requestBuilder.shutdown()
 
     //println("--- returned & parsed response=" + response)
     //response.groupBy(_._1).map(_._2.map(_._2).map { part ⇒
     //  part
     //}.foreach(println))
 
-    response
+    assert(response)
+
+    acc.completedRequests
       .groupBy(_._1)
       .mapValues(_.map(_._2))
       .foreach { kv ⇒
@@ -186,36 +192,42 @@ class FacebookRequestBuilderSpec extends PlaySpec with OneServerPerSuite with Be
 
         assert(lastValue.get >= reqSinceUntil._2.get)
       }
-
-    requestBuilder.shutdown()
   }
 
   "Paginate cursor based requests" in {
 
     val requestBuilder = new FacebookBatchRequestBuilder(cfg, new PlayWSHttpConnection, accessTokenOpt)
     requests.foreach { r ⇒ requestBuilder.adInsights(r._1, since = r._2, until = r._3) }
-    val future2 = requestBuilder.executeWithPagination
+    val acc = new HttpBatchRequestAccumulatorCallback[FacebookBatchResponsePart]
+    val future2 = requestBuilder.executeWithPagination(acc)
     val response2 = Await.result(future2, 10.seconds)
-    response2 foreach { reqRes ⇒
-      val request = reqRes._1
-      val responseParts = reqRes._2
-      val reqId = request.relativeUrl.split("/").head
-      val reqSinceUntil = requests.find(_._1 == reqId).map(r ⇒ r._2 → r._3).get
-      val data = (responseParts.last.json \ "data").validate[JsArray].get
-      val values = (data.head \ "values").validate[JsArray].get
-      val lastValue = (values.last \ "value").validate[Long]
-
-      println(
-        "=== request ===\n" + request + ":\n" +
-          "=== end condition ===\n" +
-          s"lastValue:${lastValue.get} ?>= reqSinceUntil:${reqSinceUntil._2.get}" + "\n" +
-          //"=== responses ===\n" + responseParts.map(_.bodyJson).mkString("\n") + "\n" +
-          "=== end ===========\n\n")
-
-      assert(lastValue.get >= reqSinceUntil._2.get)
-    }
 
     requestBuilder.shutdown()
+
+    assert(response2)
+
+    acc.completedRequests
+      .groupBy(_._1)
+      .mapValues(_.map(_._2))
+      .foreach { reqRes ⇒
+        val request = reqRes._1
+        val responseParts = reqRes._2
+        val reqId = request.relativeUrl.split("/").head
+        val reqSinceUntil = requests.find(_._1 == reqId).map(r ⇒ r._2 → r._3).get
+        val data = (responseParts.last.json \ "data").validate[JsArray].get
+        val values = (data.head \ "values").validate[JsArray].get
+        val lastValue = (values.last \ "value").validate[Long]
+
+        println(
+          "=== request ===\n" + request + ":\n" +
+            "=== end condition ===\n" +
+            s"lastValue:${lastValue.get} ?>= reqSinceUntil:${reqSinceUntil._2.get}" + "\n" +
+            //"=== responses ===\n" + responseParts.map(_.bodyJson).mkString("\n") + "\n" +
+            "=== end ===========\n\n")
+
+        assert(lastValue.get >= reqSinceUntil._2.get)
+      }
+
   }
 
   override def afterAll(): Unit = {

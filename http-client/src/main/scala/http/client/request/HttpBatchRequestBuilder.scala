@@ -7,6 +7,20 @@ import org.slf4j.LoggerFactory
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
+trait HttpBatchRequestCallback[BResponsePart] {
+  def apply(completedRequests: Seq[(Request, BResponsePart)]): Future[Boolean]
+}
+
+class HttpBatchRequestAccumulatorCallback[T] extends HttpBatchRequestCallback[T] {
+
+  var completedRequests: ListBuffer[(Request, T)] = ListBuffer()
+
+  def apply(completedRequest: Seq[(Request, T)]): Future[Boolean] = Future.successful {
+    completedRequests ++= completedRequest
+    true
+  }
+}
+
 abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart], BResponsePart <: HttpResponse, BRequestBuilder <: HttpBatchRequestBuilder[BResponse, BResponsePart, BRequestBuilder]](var requests: ListBuffer[Request] = ListBuffer.empty[Request], connection: HttpConnection, batchUrl: String) {
 
   protected var log = LoggerFactory.getLogger(getClass.getName)
@@ -40,38 +54,39 @@ abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart]
     f
   }
 
-  def executeWithPaginationWithoutMerging(implicit ec: ExecutionContext): Future[Seq[(Request, BResponsePart)]] = {
-    val f = _executeWithPagination(requests)
+  def executeWithPagination(partialCompletionCallback: HttpBatchRequestCallback[BResponsePart])(implicit ec: ExecutionContext): Future[Boolean] = {
+    val f = _executeWithPagination(requests, partialCompletionCallback)
     postExecute()
     f
   }
 
-  def executeWithPagination(implicit ec: ExecutionContext): Future[Map[Request, Seq[BResponsePart]]] = {
-    val f = _executeWithPagination(requests) map { requestsAndResponses ⇒
-      requestsAndResponses
-        // group response parts by request
-        .groupBy(_._1)
-        // remove grouping key, leave (request,responseParts)
-        .mapValues(_.map(_._2))
-        .map { requestAndResponseParts ⇒
-          // TODO: could there be no parts?
-          val request = requestAndResponseParts._1
-          val parts = requestAndResponseParts._2
-          //val combinedBody: String = parts.map(p ⇒ p.bodyJson.validate[JsObject].get).foldLeft(JsObject(Seq.empty))(_ deepMerge _).toString()
-          //val combinedPart = HttpResponse(code = parts.head.code, headers = parts.head.headers, body = combinedBody)
-          (request, parts)
-        }
-    }
-
-    postExecute()
-    f
-  }
+  // TODO: move this into a util
+  //def executeWithPagination(implicit ec: ExecutionContext): Future[Map[Request, Seq[BResponsePart]]] = {
+  //  val f = _executeWithPagination(requests) map { requestsAndResponses ⇒
+  //    requestsAndResponses
+  //      // group response parts by request
+  //      .groupBy(_._1)
+  //      // remove grouping key, leave (request,responseParts)
+  //      .mapValues(_.map(_._2))
+  //      .map { requestAndResponseParts ⇒
+  //        // TODO: could there be no parts?
+  //        val request = requestAndResponseParts._1
+  //        val parts = requestAndResponseParts._2
+  //        //val combinedBody: String = parts.map(p ⇒ p.bodyJson.validate[JsObject].get).foldLeft(JsObject(Seq.empty))(_ deepMerge _).toString()
+  //        //val combinedPart = HttpResponse(code = parts.head.code, headers = parts.head.headers, body = combinedBody)
+  //        (request, parts)
+  //      }
+  //  }
+  //
+  //  postExecute()
+  //  f
+  //}
 
   private def postExecute(): Unit = {
     requests = ListBuffer.empty
   }
 
-  private def _executeWithPagination(requests: Seq[Request], completedRequests: Seq[(Request, BResponsePart)] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[(Request, BResponsePart)]] = {
+  private def _executeWithPagination(requests: Seq[Request], partCompletionCallback: HttpBatchRequestCallback[BResponsePart])(implicit ec: ExecutionContext): Future[Boolean] = {
 
     val body = makeBatchRequestBody(requests)
     val postRequest = makeBatchRequest(batchUrl, body)
@@ -95,9 +110,17 @@ abstract class HttpBatchRequestBuilder[BResponse <: BatchResponse[BResponsePart]
 
     } flatMap {
       case (complete, incomplete) if incomplete.nonEmpty ⇒
-        _executeWithPagination(incomplete, completedRequests ++ complete)
+        partCompletionCallback(complete) flatMap {
+          case true ⇒
+            log.debug(s"Successfully called preCompletionCallback ${partCompletionCallback.getClass.getName} on ${complete.size} parts.")
+            _executeWithPagination(incomplete, partCompletionCallback)
+          case _ ⇒
+            log.debug(s"Failed calling preCompletionCallback ${partCompletionCallback.getClass.getName} on ${complete.size} parts, aborting.")
+            Future.successful { false }
+        }
+
       case (complete, _) ⇒
-        Future.successful { completedRequests ++ complete }
+        partCompletionCallback(complete)
     }
   }
 
