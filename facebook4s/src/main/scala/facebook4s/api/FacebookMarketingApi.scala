@@ -73,31 +73,6 @@ object FacebookMarketingApi extends HttpRequestHelpers {
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
     }
 
-    def pageInsights(
-      pageId:      String,
-      metric:      Option[String]      = None,
-      period:      Option[String]      = None,
-      since:       Option[Long]        = None,
-      until:       Option[Long]        = None,
-      accessToken: Option[AccessToken] = None) = {
-      val relativeUrl = buildRelativeUrl(pageId, "insights", metric)
-      val modifiers = buildModifiers(
-        "period" → period)
-      requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
-    }
-
-    def pagePosts(
-      pageId:      String,
-      period:      Option[String]      = None,
-      since:       Option[Long]        = None,
-      until:       Option[Long]        = None,
-      accessToken: Option[AccessToken] = None) = {
-      val relativeUrl = buildRelativeUrl(pageId, "posts")
-      val modifiers = buildModifiers(
-        "period" → period,
-        "fields" → Some("message,link,id,call_to_action,attachments,created_time"))
-      requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
-    }
   }
 }
 

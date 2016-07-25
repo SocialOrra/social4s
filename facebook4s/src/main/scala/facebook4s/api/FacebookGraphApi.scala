@@ -12,19 +12,28 @@ object FacebookGraphApi extends HttpRequestHelpers {
     def friends(fields: Map[String, Seq[String]] = Map.empty, accessToken: Option[AccessToken] = None) = requestBuilder.add(FacebookGetRequest("me/friends", None, Seq.empty, fields, accessToken), since = None, until = None)
     def albums(fields: Map[String, Seq[String]] = Map.empty, paginate: Boolean = false, accessToken: Option[AccessToken] = None) = requestBuilder.add(FacebookGetRequest("me/albums", None, Seq.empty, fields, accessToken), paginate)
 
-    def pagePosts(
+    def pageInsights(
       pageId:      String,
-      limit:       Option[Int]         = Some(DEFAULT_API_LIMIT),
-      period:      Option[String]      = Some("day"),
+      metric:      Option[String]      = None,
+      period:      Option[String]      = None,
       since:       Option[Long]        = None,
       until:       Option[Long]        = None,
       accessToken: Option[AccessToken] = None) = {
-      val relativeUrl = buildRelativeUrl(s"$pageId/posts")
+      val relativeUrl = buildRelativeUrl(pageId, "insights", metric)
       val modifiers = buildModifiers(
-        "limit" → limit,
+        "period" → period)
+      requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
+    }
+
+    def pagePosts(
+      pageId:      String,
+      period:      Option[String]      = None,
+      since:       Option[Long]        = None,
+      until:       Option[Long]        = None,
+      accessToken: Option[AccessToken] = None) = {
+      val relativeUrl = buildRelativeUrl(pageId, "posts")
+      val modifiers = buildModifiers(
         "period" → period,
-        "until" → until,
-        "since" → since,
         "fields" → Some("message,link,id,call_to_action,attachments,created_time"))
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
     }
