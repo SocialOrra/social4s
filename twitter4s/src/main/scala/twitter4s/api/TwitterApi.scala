@@ -41,6 +41,34 @@ object TwitterApi extends HttpRequestHelpers {
       requestBuilder.makeRequest(authRequest, partCompletionCallback)
     }
 
+    def userTimelineByUserId(userId: String)(implicit partCompletionCallback: HttpRequestBuilderCallback, ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader) = {
+
+      val queryString = Map(
+        "user_id" → Seq(userId),
+        "exclude_replies" → Seq("false"),
+        "trim_user" → Seq("true"),
+        "include_rts" → Seq("true"))
+      val relativeUrl = buildRelativeUrl("/", apiVersionUrl, "statuses", "user_timeline.json")
+      val headers = Seq.empty
+
+      val request = TwitterTimelineRequest(
+        baseUrl = baseUrl,
+        relativeUrl = relativeUrl,
+        headers = headers,
+        method = GetMethod,
+        queryString = queryString,
+        body = None,
+        paginated = true,
+        authHeaderGen = authHeaderGen)
+
+      val authHeader = authHeaderGen(request)
+
+      val authRequest = request.copy(
+        headers = headers ++ Seq(authHeader))
+
+      requestBuilder.makeRequest(authRequest, partCompletionCallback)
+    }
+
     def adAccount(adAccountId: String)(implicit partCompletionCallback: HttpRequestBuilderCallback, ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader) = {
 
       val queryString = Map.empty[String, Seq[String]]
@@ -137,6 +165,30 @@ object TwitterApi extends HttpRequestHelpers {
       requestBuilder.makeRequest(authRequest, partCompletionCallback)
     }
 
+    def promotedAccounts(adAccountId: String)(implicit partCompletionCallback: HttpRequestBuilderCallback, ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader) = {
+
+      val queryString = Map.empty[String, Seq[String]]
+      val relativeUrl = buildRelativeUrl("/", apiVersionUrl, "accounts", adAccountId, "promoted_accounts")
+      val headers = Seq.empty
+
+      val request = TwitterCursoredRequest(
+        baseUrl = baseUrl,
+        relativeUrl = relativeUrl,
+        headers = headers,
+        method = GetMethod,
+        queryString = queryString,
+        body = None,
+        paginated = true,
+        authHeaderGen = authHeaderGen)
+
+      val authHeader = authHeaderGen(request)
+
+      val authRequest = request.copy(
+        headers = headers ++ Seq(authHeader))
+
+      requestBuilder.makeRequest(authRequest, partCompletionCallback)
+    }
+
     def promotedTweets(adAccountId: String)(implicit partCompletionCallback: HttpRequestBuilderCallback, ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader) = {
 
       val queryString = Map.empty[String, Seq[String]]
@@ -193,7 +245,7 @@ object TwitterApi extends HttpRequestHelpers {
       requestBuilder.makeRequest(authRequest, partCompletionCallback)
     }
 
-    def promotedTweetStatsDaily(accountId: String, promotedTweetIds: Seq[String], adAccountId: String, startTime: String, endTime: String)(implicit partCompletionCallback: HttpRequestBuilderCallback, ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader) = {
+    def promotedTweetStatsDaily(adAccountId: String, promotedTweetIds: Seq[String], startTime: String, endTime: String)(implicit partCompletionCallback: HttpRequestBuilderCallback, ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader) = {
       val queryString = Map(
         "entity" → Seq("PROMOTED_TWEET"),
         "entity_ids" → promotedTweetIds,

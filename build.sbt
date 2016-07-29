@@ -3,7 +3,7 @@ import Dependencies._
 
 lazy val commonSettings = Seq(
   name := "social4s",
-  version := "1.0.0",
+  version := "1.0.1",
   organization := "social4s",
   scalaVersion := "2.11.7",
   resolvers ++= Seq(Resolver.mavenLocal,
