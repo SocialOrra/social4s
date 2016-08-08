@@ -38,6 +38,8 @@ class PlayWSHttpConnection extends HttpConnection {
 
   override def makeRequest(request: HttpRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
 
+    println(request.baseUrl + request.relativeUrl + " " + request.queryString)
+
     val r = client
       .url(request.baseUrl + request.relativeUrl)
       .withHeaders(request.headers.map({ h ⇒ h.name → h.value }): _*)

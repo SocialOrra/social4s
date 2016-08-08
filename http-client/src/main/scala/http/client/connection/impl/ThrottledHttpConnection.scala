@@ -26,7 +26,7 @@ trait ThrottledHttpConnection extends HttpConnection {
   lazy protected val actor = actorSystem.actorOf(actorProps)
 
   // TODO: make configurable
-  protected val requestTimeoutDuration = 5.seconds
+  protected val requestTimeoutDuration = 60.seconds
   protected val shutdownTimeoutDuration = 20.seconds
 
   /** This can be overridden in order to throttle subsequent requestes based on the response

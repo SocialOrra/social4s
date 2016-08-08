@@ -14,7 +14,7 @@ object FacebookMarketingApi extends HttpRequestHelpers {
       accessToken: Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl("v2.6", s"act_$adAccountId")
       val modifiers = buildModifiers(
-        "fields" → Some("name,age,business,created_time,currency,timezone_name"))
+        "fields" → Some("name,age,business,created_time,currency,timezone_name,account_id"))
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = true)
     }
 
