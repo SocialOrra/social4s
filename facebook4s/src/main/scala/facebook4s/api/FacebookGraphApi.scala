@@ -15,12 +15,14 @@ object FacebookGraphApi extends HttpRequestHelpers {
     def pageInsights(
       pageId:      String,
       metric:      Option[String]      = None,
-      period:      Option[String]      = None,
+      period:      Option[String]      = Some("day"),
       since:       Option[Long]        = None,
       until:       Option[Long]        = None,
       accessToken: Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl(pageId, "insights", metric)
       val modifiers = buildModifiers(
+        "since" → since,
+        "until" → until,
         "period" → period)
       requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
     }

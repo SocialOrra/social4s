@@ -63,14 +63,16 @@ object FacebookMarketingApi extends HttpRequestHelpers {
       adId:        String,
       metric:      Option[String]      = None,
       period:      Option[String]      = None,
-      since:       Option[Long]        = None,
-      until:       Option[Long]        = None,
+      since:       String,
+      until:       String,
       accessToken: Option[AccessToken] = None) = {
       val relativeUrl = buildRelativeUrl("v2.6", adId, "insights", metric)
       val modifiers = buildModifiers(
         "period" → period,
+        "fields" → Some("total_actions,impressions,reach,cpc,cpm,ad_id,spend,cpp,ctr,actions,account_id,action_values,cost_per_action_type,cost_per_total_action,cost_per_unique_click,unique_clicks,total_unique_actions,website_clicks,website_ctr"),
+        "time_range" → Some(s"""{"since":"$since","until":"$until"}"""),
         "time_increment" → Some("1"))
-      requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), since, until)
+      requestBuilder.add(FacebookGetRequest(relativeUrl, None, Seq.empty, modifiers, accessToken), paginated = true)
     }
 
   }
