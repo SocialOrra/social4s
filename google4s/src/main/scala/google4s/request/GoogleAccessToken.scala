@@ -1,11 +1,14 @@
 package google4s.request
 
+import akka.actor.ActorSystem
+import http.client.connection.impl.{PlayWSHttpConnection, ThrottledHttpConnection}
 import http.client.method.PostMethod
 import http.client.request.{HttpRequestAccumulatorCallback, HttpRequestBuilderCallback}
 import http.client.response.HttpHeader
 import play.api.libs.json.{JsSuccess, Json}
-
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits._
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 case class GoogleAccessTokenRenewResult(access_token: String, token_type: String, expires_in: Long)
 object GoogleAccessTokenRenewResult {
@@ -45,5 +48,17 @@ object GoogleAccessToken {
           None
       }
     }
+  }
+
+  def accessToken(requestBuilder: GoogleRequestBuilder, clientId: String, clientSecret: String, refreshToken: String)(implicit ec: ExecutionContext): Future[String] = {
+
+    GoogleAccessToken
+      .fromRenewToken(requestBuilder)(clientSecret, clientId, refreshToken, ec)
+      .map { t ⇒
+        t.getOrElse {
+          println("No access token could be retrieved, expect failures.")
+          "NO_ACCESS_TOKEN"
+        }
+      }
   }
 }
