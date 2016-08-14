@@ -5,6 +5,7 @@ import http.client.request.{CompletionEvaluation, OrElseCompletionEvaluation, Tr
 import http.client.response.{HttpHeader, HttpResponse}
 import play.api.libs.json.{JsSuccess, Json}
 import twitter4s.response.TwitterEmptyResponseBodyCompletionEvaluation
+import play.api.libs.json.JsError
 
 object TwitterTimelineRequest {
   case class DataId(id: Long)
@@ -43,13 +44,24 @@ case class TwitterTimelineRequest(
         requestWithnewQS.copy(
           headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS))
 
-      case _ ⇒
-        // TODO: how do we handle this case?
-        println(s"OH NO! Could not find data with an id in ${response.json.toString}")
-        val newQS = queryString + ("max_id" → Seq(0.toString))
-        val requestWithnewQS = copy(queryString = newQS)
-        requestWithnewQS.copy(
-          headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS))
+      case e: JsError ⇒
+
+        // sometimes it's not an array
+        response.json.validate[TwitterTimelineRequest.DataId] match {
+          case s1: JsSuccess[TwitterTimelineRequest.DataId] ⇒
+            val newQS = queryString + ("max_id" → Seq((s1.get.id - 1).toString))
+            val requestWithnewQS = copy(queryString = newQS)
+            requestWithnewQS.copy(
+              headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS))
+
+          case e1: JsError ⇒
+            // TODO: how do we handle this case?
+            println(s"OH NO! Could not find data with an id in \n${response.json.toString}\n Caused by JsError.toJson(e).toString")
+            val newQS = queryString + ("max_id" → Seq(0.toString))
+            val requestWithnewQS = copy(queryString = newQS)
+            requestWithnewQS.copy(
+              headers = TwitterRequest.newAuthHeaderForRequest(requestWithnewQS))
+        }
     }
   }
 
