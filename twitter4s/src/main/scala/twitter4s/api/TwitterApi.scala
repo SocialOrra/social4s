@@ -45,6 +45,7 @@ object TwitterApi extends HttpRequestHelpers {
 
     def userTimelineByUserId(userId: String)(implicit partCompletionCallback: HttpRequestBuilderCallback, ec: ExecutionContext, authHeaderGen: (TwitterRequest) ⇒ TwitterAuthorizationHeader) = {
 
+      //user_id=XXXX&exclude_replies=false&trim_user=true&count=XX&include_rts=true'
       val queryString = Map(
         "user_id" → Seq(userId),
         "exclude_replies" → Seq("false"),
@@ -157,7 +158,7 @@ object TwitterApi extends HttpRequestHelpers {
         method = GetMethod,
         queryString = queryString,
         body = None,
-        paginated = true,
+        paginated = false,
         authHeaderGen = authHeaderGen)
 
       val authHeader = authHeaderGen(request)
@@ -301,7 +302,7 @@ object TwitterApi extends HttpRequestHelpers {
         method = GetMethod,
         queryString = queryString,
         body = None,
-        paginated = true,
+        paginated = false,
         authHeaderGen = authHeaderGen)
 
       val authHeader = authHeaderGen(request)
