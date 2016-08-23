@@ -31,7 +31,14 @@ case class GoogleRequest(
   override def nextRequest(response: HttpResponse): GoogleRequest = {
     (response.json \ "nextLink").validate[String] match {
       case s: JsSuccess[String] ⇒
-        copy(relativeUrl = s.get)
+        copy(_queryString =
+          s.get
+            .split("\\?")
+            .last.split("&")
+            .map { x ⇒
+              val keyVal = x.split("=")
+              (keyVal.head, keyVal.tail.toSeq)
+            }.toMap ++ Map("access_token" → Seq(accessToken)))
       case _ ⇒
         println(s"OH NO! Could not find nextLink in ${response.json.toString}")
         ???
