@@ -6,7 +6,8 @@ Features
 ===
 * Asynchronous in nature
 * Supports Facebook's batch API
-* Supports per request access token; or global access token
+* Supports TWitter and Google APIs
+* Supports per request access token; or global access token, as well as request signing and refresh tokens
 * Supports rate limiting (pluggable)
 
 
